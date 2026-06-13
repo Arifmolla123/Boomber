@@ -452,7 +452,6 @@ HTML_PAGE = """
     };
     stopBtn.disabled = true;
 </script>
-</script>
 </body>
 </html>
 """
