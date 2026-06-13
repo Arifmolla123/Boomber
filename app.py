@@ -206,8 +206,11 @@ HTML_PAGE = """
             display: flex;
             justify-content: center;
             gap: 10px;
+            margin-top: 10px;
         }
         button:hover { transform: scale(0.98); background: linear-gradient(95deg, #3b82f6, #2563eb); }
+        #stopBtn { background: #4a2c2c; }
+        #stopBtn:hover { background: #6a3c3c; }
         .output-box {
             margin-top: 28px;
             background: #0b0f18;
@@ -245,48 +248,37 @@ HTML_PAGE = """
 <body>
 <div class="glass-card">
     <div class="tool-name">🔥 CYBER TOOLS 🔥</div>
-    <h1>OTP BOMBER</h1>
-    <div class="sub">☠️ flood any number with OTP calls & SMS</div>
+    <h1>UNLIMITED OTP BOMBER</h1>
+    <div class="sub">☠️ slow & steady — avoids API blocks</div>
 
     <div class="input-group">
-        <label>📱 Victim Phone Number (10 digit)</label>
+        <label>📱 টার্গেট নম্বর (10 ডিজিট)</label>
         <div class="phone-field">
             <span class="country-code">+91</span>
             <input type="tel" id="phone" placeholder="9876543210" maxlength="10">
         </div>
     </div>
 
-    <button id="bombBtn">
-        <span>💥</span> START BOMBARDMENT
-    </button>
+    <button id="startBtn">💣 START UNLIMITED BOMBING</button>
+    <button id="stopBtn" disabled>🛑 STOP</button>
 
     <div class="output-box">
-        <pre id="output">⚡ ready — enter number and launch</pre>
+        <pre id="output">⚡ রেডি। নম্বর দিন ও START চাপুন। সারাদিন চলবে (ধীর গতি)</pre>
     </div>
     <div class="badge">
-        🔥 50+ APIs | Voice + WhatsApp + SMS
+        🔥 50+ APIs | প্রতি রাউন্ডে 1 সেকেন্ড বিরতি | API ব্লক এড়াতে ধীর
     </div>
     <div class="developer">
         👨‍💻 Developer: Arif
     </div>
 </div>
+
 <script>
     let running = false;
-    const startBtn = document.createElement('button');
-    const stopBtn = document.createElement('button');
-    const bombBtn = document.getElementById('bombBtn');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
     const phoneInput = document.getElementById('phone');
     const outputPre = document.getElementById('output');
-
-    // বাটন রিপ্লেস করে START UNLIMITED ও STOP করি
-    bombBtn.remove();
-    startBtn.id = 'startBtn';
-    startBtn.innerHTML = '<span>💣</span> START UNLIMITED BOMBING';
-    stopBtn.id = 'stopBtn';
-    stopBtn.innerHTML = '<span>🛑</span> STOP';
-    stopBtn.disabled = true;
-    document.querySelector('.glass-card').insertBefore(startBtn, document.querySelector('.output-box'));
-    document.querySelector('.glass-card').insertBefore(stopBtn, document.querySelector('.output-box'));
 
     async function sendRound(phone) {
         try {
@@ -296,7 +288,7 @@ HTML_PAGE = """
                 body: JSON.stringify({ phone: phone })
             });
             const data = await response.json();
-            return data.log || '⚠️ No log';
+            return data.log || '⚠️ No response';
         } catch (err) {
             return `⚠️ Network error: ${err.message}`;
         }
@@ -309,30 +301,33 @@ HTML_PAGE = """
         }
         let phone = phoneInput.value.trim();
         if (!phone || phone.length !== 10 || isNaN(phone)) {
-            outputPre.innerText = '❌ Invalid number! Enter 10 digits.\n';
+            outputPre.innerText = '❌ ভুল নম্বর! 10 ডিজিট দিন।\n';
             return;
         }
         running = true;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        outputPre.innerText = '🔥 UNLIMITED bombing started. Press STOP to stop.\n\n';
+        outputPre.innerText = '🔥 বোমিং শুরু (আনলিমিটেড)। থামাতে STOP চাপুন।\n\n';
         let round = 0;
         while (running) {
             round++;
-            outputPre.innerText += `\n========== ROUND ${round} ==========\n`;
+            outputPre.innerText += `\n========== রাউন্ড ${round} ==========\n`;
             let result = await sendRound(phone);
             outputPre.innerText += result + '\n';
-            await new Promise(r => setTimeout(r, 500)); // 0.5 sec delay between rounds
+            // প্রতি রাউন্ডে 1 সেকেন্ড দেরি (API ব্লক এড়াতে)
+            await new Promise(r => setTimeout(r, 1000));
         }
         startBtn.disabled = false;
         stopBtn.disabled = true;
-        outputPre.innerText += '\n🛑 Bombing stopped.\n';
+        outputPre.innerText += '\n🛑 বোমিং বন্ধ করা হয়েছে।\n';
         running = false;
     };
 
     stopBtn.onclick = () => {
-        running = false;
-        outputPre.innerText += '\n🛑 Stopping...\n';
+        if (running) {
+            running = false;
+            outputPre.innerText += '\n🛑 বন্ধ করার নির্দেশ দেওয়া হয়েছে...\n';
+        }
     };
 </script>
 </body>
