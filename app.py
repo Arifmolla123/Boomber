@@ -394,57 +394,64 @@ HTML_PAGE = """
 </div>
 <script>
     let running = false;
+    let abortController = null;
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const phoneInput = document.getElementById('phone');
     const outputPre = document.getElementById('output');
 
-    async function sendOneRound(phone) {
-        const response = await fetch('/bomb', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: phone })
-        });
-        const data = await response.json();
-        return data.log;
+    async function sendRound(phone) {
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const response = await fetch('/bomb', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: phone }),
+                signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+            const data = await response.json();
+            return data.log;
+        } catch (err) {
+            return `⚠️ Request failed: ${err.message}`;
+        }
     }
 
     startBtn.onclick = async () => {
         if (running) {
-            outputPre.innerText += '\n⚠️ ইতিমধ্যে চলছে। আগে STOP চাপুন।\n';
+            outputPre.innerText += '\n⚠️ Already running! Press STOP first.\n';
             return;
         }
         let phone = phoneInput.value.trim();
         if (!phone || phone.length !== 10 || isNaN(phone)) {
-            outputPre.innerText = '❌ ভুল নম্বর! 10 ডিজিট দিন।';
+            outputPre.innerText = '❌ Invalid number! Enter 10 digits.\n';
             return;
         }
         running = true;
         startBtn.disabled = true;
         stopBtn.disabled = false;
-        outputPre.innerText = '🌀 শুরু হয়েছে... সারাদিন যাবে। থামাতে STOP চাপুন।\n';
+        outputPre.innerText = '🔥 Bombing started (UNLIMITED) - Press STOP to cease 🔥\n\n';
         let round = 0;
         while (running) {
             round++;
-            outputPre.innerText += `\n--- Round ${round} ---\n`;
-            try {
-                let log = await sendOneRound(phone);
-                outputPre.innerText += log + '\n';
-            } catch(e) {
-                outputPre.innerText += `⚠️ নেটওয়ার্ক এরর: ${e}\n`;
-            }
-            // 0.5 সেকেন্ড দেরি, ইচ্ছে করলে 0.2 করতে পারো
-            await new Promise(r => setTimeout(r, 500));
+            outputPre.innerText += `\n========== ROUND ${round} ==========\n`;
+            let result = await sendRound(phone);
+            outputPre.innerText += result + '\n';
+            // সামান্য delay ঠান্ডা হওয়ার জন্য, কিন্তু অতিরিক্ত নয়
+            await new Promise(r => setTimeout(r, 100));
         }
         startBtn.disabled = false;
         stopBtn.disabled = true;
-        outputPre.innerText += '\n✅ STOP চাপানো হয়েছে। বন্ধ।\n';
+        outputPre.innerText += '\n🛑 Bombing stopped.\n';
+        running = false;
     };
 
     stopBtn.onclick = () => {
         running = false;
     };
     stopBtn.disabled = true;
+</script>
 </script>
 </body>
 </html>
