@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: app-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+
+  - type: web
+    name: app-phishing
+    runtime: python
+    rootDir: phishing
+    buildCommand: pip install -r requirements.txt
+    startCommand: python phis.py
+
+  # প্রয়োজনে আরও পরিষেবা যোগ করতে পারেন
