@@ -1,5 +1,5 @@
-# app.py
 import uuid
+import os
 from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
@@ -20,7 +20,7 @@ dashboard_html = '''
         }
         body {
             background: linear-gradient(145deg, #0a0f1e 0%, #0c1222 100%);
-            font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, sans-serif;
+            font-family: 'Segoe UI', 'Poppins', system-ui, sans-serif;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -36,7 +36,6 @@ dashboard_html = '''
             max-width: 700px;
             width: 100%;
             padding: 2rem 2rem 2.5rem;
-            transition: all 0.3s ease;
         }
         h1 {
             font-size: 2rem;
@@ -46,7 +45,6 @@ dashboard_html = '''
             background-clip: text;
             color: transparent;
             margin-bottom: 0.5rem;
-            letter-spacing: -0.3px;
         }
         .badge {
             display: inline-block;
@@ -63,7 +61,6 @@ dashboard_html = '''
             color: #b0c4de;
             margin-bottom: 2rem;
             line-height: 1.5;
-            font-weight: 400;
         }
         .link-container {
             background: #010409;
@@ -95,7 +92,6 @@ dashboard_html = '''
             color: white;
             cursor: pointer;
             transition: 0.2s;
-            letter-spacing: 0.5px;
         }
         .copy-btn:hover {
             background: #2a3a66;
@@ -200,5 +196,4 @@ def hang(uid):
     '''
 
 if __name__ == '__main__':
-    import os
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
