@@ -159,6 +159,25 @@ def view_victims(link_id):
     conn.close()
     return render_template('victims.html', link_id=link_id, victims=victims)
 
+@app.route('/delete_link/<link_id>')
+def delete_link(link_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    # প্রথমে দেখুন লিঙ্কটি ইউজারের কিনা
+    c.execute("SELECT user_id FROM links WHERE link_id=?", (link_id,))
+    owner = c.fetchone()
+    if not owner or owner[0] != session['user_id']:
+        conn.close()
+        return "Unauthorized", 403
+    # ভিকটিম ডাটা আগে ডিলিট করুন (optional, কিন্তু পরিষ্কার রাখতে)
+    c.execute("DELETE FROM victims WHERE link_id=?", (link_id,))
+    c.execute("DELETE FROM links WHERE link_id=?", (link_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for('dashboard'))
+    
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
