@@ -1,4 +1,4 @@
-flask
-requests
-gunicorn
+aiohttp==3.9.1
+colorama==0.4.6
+requests==2.31.0
 
