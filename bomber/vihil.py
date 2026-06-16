@@ -1452,3 +1452,7 @@ if __name__ == "__main__":
         print(f"\n\n{Fore.RED}💀 BOMBER TERMINATED.{Style.RESET_ALL}")
     except Exception as e:
         print(f"\n{Fore.RED}❌ ERROR: {e}{Style.RESET_ALL}")
+        
+        if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
