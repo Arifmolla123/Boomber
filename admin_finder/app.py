@@ -9,13 +9,13 @@ import uuid
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-# ===== MongoDB সংযোগ =====
+# ===== MongoDB সংযোগ (Render-এর পরিবেশ থেকে MONGO_URI নাও) =====
 MONGO_URI = os.environ.get('MONGO_URI')
 if not MONGO_URI:
     raise Exception("MONGO_URI environment variable not set! Please add it in Render.")
 
 try:
-    client = MongoClient(MONGO_URI)
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
     db = client['spy_db']
     users_col = db['users']
     client.admin.command('ping')
