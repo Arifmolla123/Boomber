@@ -741,9 +741,6 @@ def dashboard():
 def create_link():
     if 'user' not in session:
         return redirect(url_for('login'))
-    # Only admin can create links
-    if session['user'] != 'admin':
-        return redirect(url_for('dashboard'))
     link_name = request.form.get('link_name', '').strip()
     if not link_name:
         return redirect(url_for('dashboard'))
