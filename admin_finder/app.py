@@ -240,7 +240,7 @@ ADMIN_LOGIN_HTML = """
 </html>
 """
 
-# ===== Admin Panel =====
+# ===== Admin Panel (with Delete) =====
 ADMIN_PANEL_HTML = """
 <!DOCTYPE html>
 <html>
@@ -277,7 +277,11 @@ ADMIN_PANEL_HTML = """
                     {% endfor %}
                     {{ total }}
                 </td>
-                <td><a href="/admin-view-user/{{ u.username }}" style="color:#00ffcc;">View</a></td>
+                <td>
+                    <a href="/admin-view-user/{{ u.username }}" style="color:#00ffcc;">📊 View</a>
+                    &nbsp;|&nbsp;
+                    <a href="/admin-delete-user/{{ u.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data?');" style="color:#ff4444;">🗑️ Delete</a>
+                </td>
             </tr>
             {% endfor %}
         </table>
@@ -288,7 +292,7 @@ ADMIN_PANEL_HTML = """
 </html>
 """
 
-# ===== Admin View Single User Data =====
+# ===== Admin View Single User =====
 ADMIN_USER_HTML = """
 <!DOCTYPE html>
 <html>
@@ -299,6 +303,7 @@ ADMIN_USER_HTML = """
     <a href="/admin-panel" style="color:#6688aa;display:inline-block;margin-bottom:15px;font-size:1.3rem;">⬅️ Back to Admin Panel</a>
     <h1>📊 User: {{ user.username }}</h1>
     <p class="total-visits">Total Links: {{ user.links|length }}</p>
+    <a href="/admin-delete-user/{{ user.username }}" onclick="return confirm('⚠️ Delete this user and ALL their data?');" style="color:#ff4444;display:inline-block;margin-bottom:20px;font-size:1.2rem;">🗑️ Delete this user</a>
 
     {% for link in user.links %}
     <div class="card">
@@ -630,6 +635,16 @@ def admin_view_user(username):
     if not user:
         return 'User not found', 404
     return render_template_string(ADMIN_USER_HTML, user=user)
+
+@app.route('/admin-delete-user/<username>')
+def admin_delete_user(username):
+    if 'admin' not in session:
+        return redirect(url_for('admin_login'))
+    result = users_col.delete_one({'username': username})
+    if result.deleted_count:
+        return redirect(url_for('admin_panel'))
+    else:
+        return 'User not found', 404
 
 @app.route('/admin-logout')
 def admin_logout():
