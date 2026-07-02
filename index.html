@@ -1,13 +1,295 @@
-<!-- Server 1 -->
-<button class="btn" onclick="window.location.href='/server1'">
-    <span style="font-size:1.4rem;">⚡</span>
-    Server 1
-    <span style="font-size:1.4rem; opacity:0.5;">➜</span>
-</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cyber Bomber</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+    <style>
+        /* ===== RESET & GLOBAL ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-<!-- Server 2 -->
-<button class="btn btn-server2" onclick="window.location.href='/server2'">
-    <span style="font-size:1.4rem;">⚡</span>
-    Server 2
-    <span style="font-size:1.4rem; opacity:0.5;">➜</span>
-</button>
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0a0907;
+            font-family: 'Orbitron', sans-serif;
+            /* ডায়নামিক রেডিয়াল ব্যাকগ্রাউন্ড */
+            background-image: radial-gradient(circle at 50% 0%, #1f1a0e 0%, #0a0907 70%);
+            padding: 20px;
+        }
+
+        /* ===== কার্ড - গ্লাসমরফিজম + অ্যানিমেটেড বর্ডার ===== */
+        .card {
+            width: 92%;
+            max-width: 500px;
+            padding: 48px 36px;
+            background: rgba(17, 16, 12, 0.7);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            border-radius: 32px;
+            text-align: center;
+            position: relative;
+            /* বর্ডারের জায়গায় অ্যানিমেটেড আউটলাইন */
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            box-shadow: 0 0 80px rgba(255, 215, 0, 0.06);
+            transition: transform 0.3s ease, box-shadow 0.4s ease;
+        }
+
+        /* সিউডো এলিমেন্ট দিয়ে অ্যানিমেটেড গোল্ড বর্ডার */
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 34px;
+            padding: 3px;
+            background: conic-gradient(from 0deg, #ffd700, #b8860b, #ffd700, #b8860b, #ffd700);
+            background-size: 300% 300%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: borderSpin 6s linear infinite;
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        @keyframes borderSpin {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* কার্ডের ওপর হোভার ইফেক্ট */
+        .card:hover {
+            box-shadow: 0 0 100px rgba(255, 215, 0, 0.15);
+            transform: scale(1.01);
+        }
+
+        /* ===== টাইটেল (অ্যানিমেটেড শ্যাডো) ===== */
+        .title {
+            font-weight: 900;
+            font-size: clamp(2.2rem, 9vw, 3.6rem);
+            letter-spacing: 6px;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3), 0 0 60px rgba(255, 215, 0, 0.1);
+            margin-bottom: 8px;
+            transition: text-shadow 0.3s ease;
+        }
+
+        .title:hover {
+            text-shadow: 0 0 50px rgba(255, 215, 0, 0.6), 0 0 100px rgba(255, 215, 0, 0.2);
+        }
+
+        /* ===== সাবটাইটেল ===== */
+        .subtitle {
+            font-weight: 700;
+            font-size: 0.7rem;
+            letter-spacing: 8px;
+            color: rgba(255, 215, 0, 0.4);
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.08);
+            position: relative;
+        }
+
+        /* সাবটাইটেলের আন্ডারলাইনে ছোট গ্লো ডট */
+        .subtitle::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: #ffd700;
+            box-shadow: 0 0 15px #ffd700;
+            border-radius: 2px;
+        }
+
+        /* ===== বাটন গ্রুপ ===== */
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            margin-bottom: 10px;
+        }
+
+        /* ===== বেসিক বাটন - আপগ্রেডেড ===== */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 18px;
+            padding: 18px 24px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
+            font-size: 1.15rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            border: 2px solid #ffd700;
+            border-radius: 18px;
+            background: transparent;
+            color: #ffd700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* বাটনের ব্যাকগ্রাউন্ডের শেড (হোভারের জন্য) */
+        .btn::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: #ffd700;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: -1;
+            border-radius: 16px;
+        }
+
+        /* হোভার - গোল্ড ফিল + ডার্ক টেক্সট + গ্লো */
+        .btn:hover {
+            color: #0d0b08;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(255, 215, 0, 0.25);
+            border-color: #ffe44d;
+        }
+
+        .btn:hover::after {
+            opacity: 1;
+        }
+
+        /* অ্যাক্টিভ ক্লিক */
+        .btn:active {
+            transform: scale(0.94) translateY(0px);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+        }
+
+        /* সার্ভার ২ - ডিফারেন্ট গোল্ড */
+        .btn-server2 {
+            border-color: #f0b300;
+            color: #f0b300;
+        }
+        .btn-server2::after {
+            background: #f0b300;
+        }
+        .btn-server2:hover {
+            box-shadow: 0 12px 35px rgba(240, 179, 0, 0.3);
+            border-color: #ffc61a;
+        }
+
+        /* বাটনের আইকন স্টাইল */
+        .btn .icon-left {
+            font-size: 1.5rem;
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.2));
+        }
+        .btn .icon-right {
+            font-size: 1.3rem;
+            opacity: 0.6;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .btn:hover .icon-right {
+            transform: translateX(6px);
+            opacity: 1;
+        }
+
+        /* ===== স্ট্যাটাস বার (লাইভ ইন্ডিকেটর) ===== */
+        .status {
+            margin-top: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 0.6rem;
+            letter-spacing: 3px;
+            color: rgba(255, 215, 0, 0.2);
+            border-top: 1px solid rgba(255, 215, 0, 0.05);
+            padding-top: 20px;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #ffd700;
+            border-radius: 50%;
+            box-shadow: 0 0 20px #ffd700;
+            animation: pulseDot 1.8s ease-in-out infinite;
+        }
+
+        @keyframes pulseDot {
+            0%, 100% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .status-text {
+            background: linear-gradient(90deg, rgba(255,215,0,0.1), rgba(255,215,0,0.3), rgba(255,215,0,0.1));
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,215,0,0.05);
+        }
+
+        /* ===== রেস্পন্সিভ ===== */
+        @media (max-width: 480px) {
+            .card {
+                padding: 32px 18px;
+            }
+            .btn {
+                font-size: 0.9rem;
+                padding: 16px 18px;
+                gap: 12px;
+            }
+            .btn .icon-left {
+                font-size: 1.2rem;
+            }
+            .subtitle {
+                letter-spacing: 4px;
+                font-size: 0.6rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+
+        <h1 class="title">CYBER BOMBER</h1>
+        <div class="subtitle">✦ DEVELOPER ARIF ✦</div>
+
+        <div class="btn-group">
+
+            <!-- SERVER 1 (Redirects to /server1) -->
+            <button class="btn" onclick="window.location.href='/server1'">
+                <span class="icon-left">⚡</span>
+                Server 1
+                <span class="icon-right">➜</span>
+            </button>
+
+            <!-- SERVER 2 (Redirects to /server2) -->
+            <button class="btn btn-server2" onclick="window.location.href='/server2'">
+                <span class="icon-left">⚡</span>
+                Server 2
+                <span class="icon-right">➜</span>
+            </button>
+
+        </div>
+
+        <div class="status">
+            <span class="status-dot"></span>
+            <span class="status-text">⏣ SYSTEM READY · ENCRYPTED LINK</span>
+        </div>
+
+    </div>
+
+</body>
+    </html>
