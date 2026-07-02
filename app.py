@@ -1,8 +1,9 @@
 import os
+import traceback
 from flask import Flask, send_from_directory
 from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
-# ===== মেইন অ্যাপ (HTML কার্ড দেখাবে) =====
+# ===== মেইন অ্যাপ (HTML কার্ড) =====
 main_app = Flask(__name__, static_folder='.', static_url_path='')
 
 @main_app.route('/')
@@ -12,32 +13,31 @@ def serve_index():
 # ===== সার্ভার ১ (bomber.py) লোড =====
 try:
     from bomber import app as server1_app
-    print("✅ Server 1 (bomber.py) loaded successfully.")
+    print("✅ Server 1 (bomber.py) loaded")
 except Exception as e:
-    print(f"❌ Server 1 load error: {e}")
     server1_app = Flask(__name__)
     @server1_app.route('/')
-    def err1():
-        return f"<h3>❌ Server 1 Error</h3><pre>{e}</pre>"
+    @server1_app.route('/<path:path>')
+    def err1(path=''):
+        return f"<pre style='color:#ff6b6b;'>❌ Server 1 Error:\n{traceback.format_exc()}</pre>"
 
 # ===== সার্ভার ২ (hard_bomber.py) লোড =====
 try:
     from hard_bomber import app as server2_app
-    print("✅ Server 2 (hard_bomber.py) loaded successfully.")
+    print("✅ Server 2 (hard_bomber.py) loaded")
 except Exception as e:
-    print(f"❌ Server 2 load error: {e}")
     server2_app = Flask(__name__)
     @server2_app.route('/')
-    def err2():
-        return f"<h3>❌ Server 2 Error</h3><pre>{e}</pre>"
+    @server2_app.route('/<path:path>')
+    def err2(path=''):
+        return f"<pre style='color:#ff6b6b;'>❌ Server 2 Error:\n{traceback.format_exc()}</pre>"
 
-# ===== তিনটি অ্যাপকে একত্রিত করা =====
+# ===== ডিসপ্যাচার মাউন্ট =====
 application = DispatcherMiddleware(main_app, {
     '/server1': server1_app,
     '/server2': server2_app,
 })
 
-# ===== লোকাল বা Render-এ চালানোর জন্য =====
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     from werkzeug.serving import run_simple
