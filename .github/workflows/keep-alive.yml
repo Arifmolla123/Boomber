@@ -1,0 +1,12 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # প্রতি ১০ মিনিটে রান করবে
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render App
+        run: curl -s https://hard-bomber.onrender.com/ > /dev/null
