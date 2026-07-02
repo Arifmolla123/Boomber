@@ -16,7 +16,7 @@ except Exception as e:
 # ===== Server 2 ইমপোর্ট করুন =====
 try:
     from hard_bomber import app as server2_app
-    print("✅ Server 2 (hard_bomber.py) loaded.")
+    print("✅ Server 2 (hard-bomber.py) loaded.")
 except Exception as e:
     print(f"⚠️ Server 2 load error: {e}")
     server2_app = Flask(__name__)
