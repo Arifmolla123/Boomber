@@ -2,7 +2,7 @@ name: Keep Render Alive
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # প্রতি ১০ মিনিটে রান করবে
+    - cron: '*/10 * * * *'
 
 jobs:
   ping:
