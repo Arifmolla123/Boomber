@@ -481,7 +481,7 @@ HTML_PAGE = """
         bombBtn.disabled = true;
         bombBtn.style.opacity = '0.6';
         try {
-            const response = await fetch('/bomb', {
+            const response = await fetch('/server1/bomb', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ phone: phone })
