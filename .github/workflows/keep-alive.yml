@@ -2,11 +2,24 @@ name: Keep Render Alive
 
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'       # প্রতি ৫ মিনিটে (১৫ মিনিটের আগেই রিসেট)
+  workflow_dispatch:             # ম্যানুয়ালি রান করার অপশন (টেস্টের জন্য)
 
 jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Ping Render App
-        run: curl -s https://hard-bomber.onrender.com/ > /dev/null
+      - name: Ping Root (Wake up)
+        run: |
+          echo "⏳ Sending ping to https://hard-bomber.onrender.com/"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://hard-bomber.onrender.com/)
+          echo "✅ Root Status Code: $STATUS"
+          if [ "$STATUS" -ne 200 ] && [ "$STATUS" -ne 302 ]; then
+            echo "⚠️ Unexpected status, but service might be waking up."
+          fi
+          
+      - name: Ping Server 2 (Ensure full wake)
+        run: |
+          echo "⏳ Sending extra ping to /server2"
+          STATUS2=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 https://hard-bomber.onrender.com/server2)
+          echo "✅ Server2 Status Code: $STATUS2"
