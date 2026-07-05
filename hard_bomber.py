@@ -3,12 +3,17 @@
 import os
 import asyncio
 import aiohttp
+import time
 from flask import Flask, request, render_template_string, jsonify
 from colorama import Fore, Style, init
 
 init(autoreset=True)
 
 app = Flask(__name__)
+
+# ========== কুল-ডাউন ট্র্যাকার ==========
+last_used = {}  # ফোন নম্বর → শেষ ব্যবহারের টাইমস্ট্যাম্প
+COOLDOWN_SECONDS = 900  # ১৫ মিনিট
 
 # ========== ওয়ার্কিং API লিস্ট (তোমার দেওয়া ১৫১টি সহ) ==========
 def get_working_apis():
@@ -889,14 +894,42 @@ def index():
         phone = request.form.get('phone', '').strip()
         cycles = int(request.form.get('cycles', 1))
         delay = float(request.form.get('delay', 2))
+        
+        # ভ্যালিডেশন
         if not phone.isdigit() or len(phone) != 10:
             return render_template_string(HTML_FORM, result="❌ Invalid phone number (must be 10 digits)")
+        
+        # ===== কুল-ডাউন চেক =====
+        current_time = time.time()
+        if phone in last_used:
+            time_diff = current_time - last_used[phone]
+            if time_diff < COOLDOWN_SECONDS:
+                remaining = int(COOLDOWN_SECONDS - time_diff)
+                minutes = remaining // 60
+                seconds = remaining % 60
+                return render_template_string(
+                    HTML_FORM, 
+                    result=f"⏳ This number was used recently. Please wait {minutes}m {seconds}s before trying again."
+                )
+        
+        # ব্যবহারের সময় রেকর্ড করুন
+        last_used[phone] = current_time
+        
+        # সাইকেল ও ডেলায় ক্যাপ (অপশনাল, নিরাপত্তার জন্য)
+        cycles = min(cycles, 5)
+        delay = max(3, delay)
+        
         apis = get_working_apis()
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         success, total = loop.run_until_complete(bomb(phone, apis, cycles, delay))
         loop.close()
-        return render_template_string(HTML_FORM, result=f"✅ {success} successful out of {total} requests sent to +91{phone}")
+        
+        return render_template_string(
+            HTML_FORM, 
+            result=f"✅ {success} successful out of {total} requests sent to +91{phone}"
+        )
+    
     return render_template_string(HTML_FORM, result=None)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
